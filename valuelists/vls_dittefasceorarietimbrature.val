@@ -1,0 +1,10 @@
+addEmptyValue:1,
+dataProviderID1:"inizioorario",
+dataProviderID3:"iddittafasciaorariatimbrature",
+dataSource:"db:/ma_anagrafiche/ditte_fasceorarietimbrature",
+name:"vls_dittefasceorarietimbrature",
+returnDataProviders:4,
+showDataProviders:1,
+typeid:34,
+uuid:"6B71A294-712C-436E-93D1-5BB365F0CFFB",
+valueListType:1

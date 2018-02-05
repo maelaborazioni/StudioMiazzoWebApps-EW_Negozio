@@ -1,0 +1,15 @@
+encapsulation:12,
+items:[
+{
+height:480,
+partType:5,
+typeid:19,
+uuid:"AA002FB7-44B5-4692-9342-B6D4E876A0E1"
+}
+],
+name:"neg_prog_periodo_settimane_tab",
+onShowMethodID:"-1",
+showInMenu:true,
+styleName:"leaf_style",
+typeid:3,
+uuid:"788A2D8F-998A-4DB9-B17A-8DD8BB2832BA"
