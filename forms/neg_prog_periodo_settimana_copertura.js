@@ -167,8 +167,7 @@ function onRightClickGiorno(event)
 	{
 		var copiaDip = popUpMenu.addMenuItem('Copia programmazione dipendente',globals.copiaProgrammazioneSettimanaDipendente);
 		copiaDip.methodArguments = [event,numSettimana,foundset['idlavoratore']];
-		// TODO ticket 12467 test per evitare cancellazioni casuali di programmazione
-		copiaDip.enabled = false;//true;
+		copiaDip.enabled = true;
 		var incollaDip = popUpMenu.addMenuItem('Incolla settimana dipendente',globals.incollaProgrammazioneSettimanaDipendente);
 		incollaDip.methodArguments = [event,numSettimana,foundset['idlavoratore']];
 		incollaDip.enabled = (forms.neg_prog_periodo_tab.vDipendenteDaCopiare != null 
@@ -178,8 +177,7 @@ function onRightClickGiorno(event)
 		
 		var copia = popUpMenu.addMenuItem('Copia programmazione settimana',globals.copiaProgrammazioneSettimana);
 		copia.methodArguments = [event,numSettimana];
-		// TODO ticket 12467 test per evitare cancellazioni casuali di programmazione
-		copia.enabled = false;//true;
+		copia.enabled = true;
 		var incolla = popUpMenu.addMenuItem('Incolla programmazione settimana',globals.incollaProgrammazioneSettimana);
 		incolla.methodArguments = [event,numSettimana];
 		incolla.enabled = forms.neg_prog_periodo_tab.vSettimanaDaCopiare != null ? true : false;
