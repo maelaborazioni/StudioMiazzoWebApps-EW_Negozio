@@ -5761,7 +5761,7 @@ function inizializzaGiornProgFasceFestivita(arrLav,primoGGSettimana,ultimoGGSett
 		var g;
 		for(g = primoGGSettimana; g <= ultimoGGSettimana; g = new Date(g.getFullYear(),g.getMonth(),g.getDate() + 1))
 		{
-		    if(getProgrammazioneFasce(arrLav[l],g) != null)
+		    if(scopes.giornaliera.getProgrammazioneFasceGiorno(arrLav[l],g) != null)
 				continue;
 			else
 			{
