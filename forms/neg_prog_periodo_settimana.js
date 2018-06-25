@@ -110,8 +110,11 @@ function preparaProgrammazioneSettimanaNegozio(settimana,anno,tipoReteImpresa,fr
 		var recRegolaFine = ultimoGGSettimana <= dataCessazione ? 
 			                  globals.getRegolaLavoratoreGiorno(arrLav[l - 1],ultimoGGSettimana) :
 			                  globals.getRegolaLavoratoreGiorno(arrLav[l - 1],dataCessazione);
-		if(recRegolaInizio && recRegolaFine && recRegolaInizio.idregole != recRegolaFine.idregole)
-  			globals.ma_utl_showWarningDialog('Per il lavoratore ' + globals.getNominativo(arrLav[l-1]) + ' è avvenuto un cambio regola in corso della ' + settimana + 'a settimana nel giorno ' +
+		if(recRegolaInizio == null)
+			throw new Error('Per il lavoratore ' + globals.getNominativo(arrLav[l-1]) + ' della ditta ' + globals.getRagioneSociale(globals.getDitta(arrLav[l-1])) + ' assunto il giorno ' + globals.dateFormat(globals.getDataAssunzione(arrLav[l-1]),globals.EU_DATEFORMAT) + 
+				            ' non è stata indicata una regola oraria valida. <br/>Contattare il servizio di assistenza.');
+        if(recRegolaInizio && recRegolaFine	&&(recRegolaInizio.idregole != recRegolaFine.idregole))
+  			throw new Error('Per il lavoratore ' + globals.getNominativo(arrLav[l-1]) + ' è avvenuto un cambio regola in corso della ' + settimana + 'a settimana nel giorno ' +
   				                             globals.getGiornoUltimaRegola(arrLav[l - 1]) + '.<br/>Al momento non è considerato nel calcolo del superamento dell\'orario!');
 		
         // calcolo dei numeri di giorni di riposo (per tipo) definiti dalla regola del blocco 
