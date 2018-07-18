@@ -237,9 +237,11 @@ function onRenderTotaleOre(event)
 		var riposi = rec['riposi'];
 		var assuntoInCorsoSettimana = rec['assunto'];
 		var cessatoInCorsoSettimana = rec['cessato'];
+		var tirocinante = rec['tirocinante'];
 		
 		if(totOreTeorico == oreRegola && riposi == 1
-			|| (assuntoInCorsoSettimana || cessatoInCorsoSettimana) && totOreTeorico <= oreRegola)
+			|| (assuntoInCorsoSettimana || cessatoInCorsoSettimana) && totOreTeorico <= oreRegola
+			|| tirocinante)
 		{
 			if(totOreStraordinario > 0)
 			{
