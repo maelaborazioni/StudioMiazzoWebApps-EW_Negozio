@@ -87,12 +87,12 @@ function preparaProgrammazioneSettimanaNegozio(settimana,anno,tipoReteImpresa,fr
                 'ore_programmato','riposi','idlavoratore','ore_regola','ore_teorico','tooltipRiposi',
 				'ore_straordinario','ore_assenza','ore_festivita','ore_ordinario','tooltipDipendente',
 				'tooltipLU','tooltipMA','tooltipME','tooltipGI','tooltipVE','tooltipSA','tooltipDO',
-				'assunto','cessato','cod_ditta','ruolo'];
+				'assunto','cessato','cod_ditta','ruolo','tirocinante'];
     var types = [JSColumn.TEXT,JSColumn.TEXT,JSColumn.TEXT,JSColumn.TEXT,JSColumn.TEXT,JSColumn.TEXT,JSColumn.TEXT,JSColumn.TEXT,
 				 JSColumn.NUMBER,JSColumn.NUMBER,JSColumn.NUMBER,JSColumn.NUMBER,
 				 JSColumn.NUMBER,JSColumn.TEXT,JSColumn.NUMBER,JSColumn.NUMBER,JSColumn.NUMBER,JSColumn.NUMBER,JSColumn.TEXT,
 				 JSColumn.TEXT,JSColumn.TEXT,JSColumn.TEXT,JSColumn.TEXT,JSColumn.TEXT,JSColumn.TEXT,JSColumn.TEXT,
-				 JSColumn.NUMBER,JSColumn.NUMBER,JSColumn.NUMBER,JSColumn.TEXT];
+				 JSColumn.NUMBER,JSColumn.NUMBER,JSColumn.NUMBER,JSColumn.TEXT,JSColumn.NUMBER];
     
 	var _nDataSetSettimana = databaseManager.createEmptyDataSet(0,cols);
 	
@@ -125,7 +125,7 @@ function preparaProgrammazioneSettimanaNegozio(settimana,anno,tipoReteImpresa,fr
 	    var giornoRiposoPrimario = null;
 	    var giornoRiposoSecondario = null;
 	    
-		/** @type {JSFoundset<db:/ma_presenze/e2regolefasce>} */
+		/** @type {JSFoundSet<db:/ma_presenze/e2regolefasce>} */
 	    var fsRegoleFasce = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,globals.Table.REGOLE_FASCE);
 	    if(fsRegoleFasce.find())
 	    {
@@ -151,7 +151,7 @@ function preparaProgrammazioneSettimanaNegozio(settimana,anno,tipoReteImpresa,fr
 		
 	    // costruzione array dati
 		var arr = new Array(globals.getNominativo(arrLav[l - 1]),null,null,null,null,null,null,null,0
-			                ,null,arrLav[l - 1],recRegolaInizio.totaleoreperiodo/100,0,0,0,0,0,null,'',null);
+			                ,null,arrLav[l - 1],recRegolaInizio.totaleoreperiodo/100,0,0,0,0,0,null,'',null,null);
 				
 		// compilazione dati su regola (e fascia oraria?) del lavoratore : prendiamo di base il primo giorno della 
 		// settimana che è quello stabilito per gli eventuali cambi regola
@@ -319,8 +319,7 @@ function preparaProgrammazioneSettimanaNegozio(settimana,anno,tipoReteImpresa,fr
 			
 			// totale ore festività settimana
 			arr[16] = arr[16] + oreFestGiorno;
-			
-			
+						
 		}
 		
 		// gestione informazioni su orari settimanali
@@ -396,6 +395,9 @@ function preparaProgrammazioneSettimanaNegozio(settimana,anno,tipoReteImpresa,fr
 		arr[28] = globals.getCodDitta(globals.getDitta(arrLav[l - 1]));
 		// ruolo dell'utente
 		arr[29] = globals.getUserFromIdLavoratore(arrLav[l - 1],globals.svy_sec_lgn_owner_id).sec_user_to_lavoratori_to_sec_user.sec_user_to_sec_user_org.sec_user_org_to_sec_organization.name;
+		
+		// tirocinante?
+		arr[30] = globals.isTirocinante(arrLav[l - 1]);
 		
 		_nDataSetSettimana.addRow(l,arr);
 	}
