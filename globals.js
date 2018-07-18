@@ -116,6 +116,8 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 	dsGiornoNegozio.addColumn('ore_festivo',18,JSColumn.NUMBER);
 	types.push(JSColumn.NUMBER);
 	dsGiornoNegozio.addColumn('ore_ordinario',19,JSColumn.NUMBER);
+	types.push(JSColumn.NUMBER);
+	dsGiornoNegozio.addColumn('tirocinante',20,JSColumn.NUMBER);
 	
 	// compilazione del dataset ad hoc per presentazione 
 	for(var l = 1; l <= numLavoratori; l++)
@@ -139,6 +141,7 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 		dsGiornoNegozio.setValue(l,16,0);
 		dsGiornoNegozio.setValue(l,18,null);
 		dsGiornoNegozio.setValue(l,19,null);
+		dsGiornoNegozio.setValue(l,20,null);
 		
 		// verifica se lavoratore non ancora assunto o già cessato
 		var dataAss = globals.getDataAssunzione(arrLavoratori[l - 1]); 
@@ -286,7 +289,8 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 			dsGiornoNegozio.setValue(l,13,recFasciaProg.idfasciaoraria);
 			dsGiornoNegozio.setValue(l,18,oreFestive != 0 ? oreFestive : null);
 			dsGiornoNegozio.setValue(l,19,oreFestive != 0 ? null : ((oreTeoriche > 0 && oreProgrammate > 0) ? Math.min(oreTeoriche,oreProgrammate) : null));
-			
+			if(isTirocinante(arrLavoratori[l - 1]))
+				dsGiornoNegozio.setValue(l,20,1);
 		}
 						
 	}
@@ -1672,7 +1676,7 @@ function calcolaOreEventoSemplice(entrata,uscita)
  */
 function calcolaOreEventoFasciaOraria(idDittaFasciaOraria)
 {
-	/** @type {JSFoundset<db:/ma_presenze/e2fo_fasceorarie>}*/
+	/** @type {JSFoundSet<db:/ma_presenze/e2fo_fasceorarie>}*/
 	var fs = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,globals.Table.FASCE_ORARIE);
 	if(fs.find())
 	{
@@ -1697,7 +1701,7 @@ function calcolaOreEventoFasciaOrariaTimbrature(idDittaFasciaOrariaTimbrature)
 	if(idDittaFasciaOrariaTimbrature == null)
 		return 0;
 	
-	/** @type {JSFoundset<db:/ma_anagrafiche/ditte_fasceorarietimbrature>}*/
+	/** @type {JSFoundSet<db:/ma_anagrafiche/ditte_fasceorarietimbrature>}*/
 	var fs = databaseManager.getFoundSet(globals.Server.MA_ANAGRAFICHE,globals.Table.FASCE_ORARIE_DITTA_TIMBRATURE);
 	if(fs.find())
 	{
@@ -1736,7 +1740,7 @@ function calcolaOreEventoFasciaOrariaTimbrature(idDittaFasciaOrariaTimbrature)
  */
 function getFasciaOrariaFittizia(idFasciaOraria,inizioOrario,inizioPausa,finePausa,fineOrario)
 {
-	/** @type{JSFoundset<db:/ma_presenze/e2fo_fasceorariefittizie>} */
+	/** @type{JSFoundSet<db:/ma_presenze/e2fo_fasceorariefittizie>} */
 	var fsFasceOrarieFittizie = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,globals.Table.FASCE_ORARIE_FITTIZIE);
 	if(fsFasceOrarieFittizie.find())
 	{
@@ -1772,7 +1776,7 @@ function getFasciaOrariaFittizia(idFasciaOraria,inizioOrario,inizioPausa,finePau
  */
 function getFasciaOrariaDittaTimbrature(idDitta,inizioOrario,inizioPausa,finePausa,fineOrario)
 {
-	/** @type{JSFoundset<db:/ma_anagrafiche/ditte_fasceorarietimbrature>} */
+	/** @type{JSFoundSet<db:/ma_anagrafiche/ditte_fasceorarietimbrature>} */
 	var fsFasceOrarieDittaTimbr = databaseManager.getFoundSet(globals.Server.MA_ANAGRAFICHE,globals.Table.FASCE_ORARIE_DITTA_TIMBRATURE);
 	if(fsFasceOrarieDittaTimbr.find())
 	{
@@ -1802,7 +1806,7 @@ function getFasciaOrariaDittaTimbrature(idDitta,inizioOrario,inizioPausa,finePau
  */
 function getFasciaOrariaDittaTimbratureDaFascia(idFasciaOrariaDittaTimbrature)
 {
-	/** @type{JSFoundset<db:/ma_anagrafiche/ditte_fasceorarietimbrature>} */
+	/** @type{JSFoundSet<db:/ma_anagrafiche/ditte_fasceorarietimbrature>} */
 	var fsFasceOrarieDittaTimbr = databaseManager.getFoundSet(globals.Server.MA_ANAGRAFICHE,globals.Table.FASCE_ORARIE_DITTA_TIMBRATURE);
 	if(fsFasceOrarieDittaTimbr.find())
 	{
@@ -1830,7 +1834,7 @@ function getFasciaOrariaDittaTimbratureDaFascia(idFasciaOrariaDittaTimbrature)
  */
 function inserisciNuovaFasciaFittizia(idFasciaPadre,inizioOrario,inizioPausa,finePausa,fineOrario)
 {
-	/** @type{JSFoundset<db:/ma_presenze/e2fo_fasceorariefittizie>} */
+	/** @type{JSFoundSet<db:/ma_presenze/e2fo_fasceorariefittizie>} */
 	var fsFasceOrarieFittizie = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,globals.Table.FASCE_ORARIE_FITTIZIE);
 	var newRecordIndex = fsFasceOrarieFittizie.newRecord(false);
 	if(newRecordIndex >= 0)
@@ -1872,7 +1876,7 @@ function inserisciNuovaFasciaFittizia(idFasciaPadre,inizioOrario,inizioPausa,fin
  */
 function inserisciNuovaFasciaOrariaTimbrature(idDitta,inizioOrario,inizioPausa,finePausa,fineOrario)
 {
-	/** @type{JSFoundset<db:/ma_anagrafiche/ditte_fasceorarietimbrature>} */
+	/** @type{JSFoundSet<db:/ma_anagrafiche/ditte_fasceorarietimbrature>} */
 	var fsFasceOrarieDittaTimbr = databaseManager.getFoundSet(globals.Server.MA_ANAGRAFICHE,globals.Table.FASCE_ORARIE_DITTA_TIMBRATURE);
 	var newRecordIndex = fsFasceOrarieDittaTimbr.newRecord(false);
 	if(newRecordIndex >= 0)
@@ -2102,7 +2106,7 @@ function getLavoratoriSettimanaAnno(primoGGSettimana,ultimoGGSettimana)
 		var arrLav = []; 
 		
 		// recuperiamo i lavoratori/utenti attivi nella settimana
-		/** @type {JSFoundset<db:/ma_anagrafiche/lavoratori>}*/
+		/** @type {JSFoundSet<db:/ma_anagrafiche/lavoratori>}*/
 		var fsLav = databaseManager.getFoundSet(globals.Server.MA_ANAGRAFICHE,globals.Table.LAVORATORI);
 		if(fsLav.find())
 		{
@@ -2166,7 +2170,7 @@ function getLavoratoriDittaSettimanaAnno(idDitta,primoGGSettimana,ultimoGGSettim
 		var arrLav = []; 
 		
 		// recuperiamo i lavoratori/utenti attivi nella settimana
-		/** @type {JSFoundset<db:/ma_anagrafiche/lavoratori>}*/
+		/** @type {JSFoundSet<db:/ma_anagrafiche/lavoratori>}*/
 		var fsLav = databaseManager.getFoundSet(globals.Server.MA_ANAGRAFICHE,globals.Table.LAVORATORI);
 		if(fsLav.find())
 		{
@@ -2237,7 +2241,7 @@ function getLavoratoriReteImpresaSettimanaAnno(primoGGSettimana,ultimoGGSettiman
 		var arrLav = []; 
 		
 		// recuperiamo i lavoratori/utenti attivi nella settimana
-		/** @type {JSFoundset<db:/ma_anagrafiche/lavoratori>}*/
+		/** @type {JSFoundSet<db:/ma_anagrafiche/lavoratori>}*/
 		var fsLav = databaseManager.getFoundSet(globals.Server.MA_ANAGRAFICHE,globals.Table.LAVORATORI);
 		if(fsLav.find())
 		{
@@ -2625,7 +2629,7 @@ function onRenderGiornoNegozio(event)
 			ren.toolTipText = 'Dipendente non ancora assunto o già cessato non modificabile';
 			ren.enabled = false;
 		}
-		else if(rec['regola_zero_ore'] == 1)
+		else if(rec['regola_zero_ore'] == 1 && !rec['tirocinante'])
 		{
 			ren.bgcolor = 'gray';
 			ren.toolTipText = 'Dipendente con regola a zero ore non modificabile';
@@ -2782,7 +2786,7 @@ function ottieniDataSetFasceProgrammate(idLavoratore, settimana, anno)
 {
 	var primoGgSettimana = globals.getDateOfISOWeek(settimana, anno);
 
-	/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 	var fsProg = databaseManager.getFoundSet(globals.Server.MA_PRESENZE, globals.Table.GIORNALIERA_PROGFASCE);
 
 	var colNames = ['idlavoratore','cognome', 'nome',
@@ -2825,7 +2829,7 @@ function ottieniDataSetFasceProgrammate(idLavoratore, settimana, anno)
 function getMinOrarioInizialeGiorno(arrLavoratori,giorno)
 {
 	var minOrario = 2359;
-	/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 	var fsProg = databaseManager.getFoundSet(globals.Server.MA_PRESENZE, globals.Table.GIORNALIERA_PROGFASCE);
     if(fsProg.find())
     {
@@ -2857,7 +2861,7 @@ function getMinOrarioInizialeGiorno(arrLavoratori,giorno)
 function getMaxOrarioFinaleGiorno(arrLavoratori,giorno)
 {
 	var maxOrario = 0;
-	/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 	var fsProg = databaseManager.getFoundSet(globals.Server.MA_PRESENZE, globals.Table.GIORNALIERA_PROGFASCE);
 	if(fsProg.find())
     {
@@ -2893,7 +2897,7 @@ function ottieniDataSetTimbrProgrammate(idLavoratore, settimana, anno)
 {
 	var primoGgSettimana = globals.getDateOfISOWeek(settimana, anno);
 
-	/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 	var fsProg = databaseManager.getFoundSet(globals.Server.MA_PRESENZE, globals.Table.GIORNALIERA_PROGFASCE);
 
 	var colNames = ['idlavoratore','cognome', 'nome', 'lunedi', 'martedi', 'mercoledi', 'giovedi','venerdi','sabato','domenica'];
@@ -2966,7 +2970,7 @@ function getGiornoRiposoSettimanale(idLavoratore,giorno,tipoRiposo)
 	var primoGgSettimana = globals.getDateOfISOWeek(settimana,giorno.getFullYear());
 	var ultimoGgSettimana = new Date(primoGgSettimana.getFullYear(),primoGgSettimana.getMonth(),primoGgSettimana.getDate() + 6);
 
-	/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 	var fs = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,globals.Table.GIORNALIERA_PROGFASCE);
 	if(fs.find())
 	{
@@ -4886,7 +4890,7 @@ function impostaRiposo(_itemInd, _parItem, _isSel, _parMenTxt, _menuTxt,event,id
 			return;
 		}
 	    		
-		/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+		/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 		var fs = databaseManager.getFoundSet(globals.Server.MA_PRESENZE, globals.Table.GIORNALIERA_PROGFASCE);
 		if (fs.find()) {
 			fs.iddip = idLavoratore;
@@ -5081,7 +5085,7 @@ function impostaChiusuraNegozio(_itemInd, _parItem, _isSel, _parMenTxt, _menuTxt
 		for (var l = 0; l < arrLavoratori.length; l++) {
 			var idLavoratore = arrLavoratori[l];
 
-			/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+			/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 			var fs = databaseManager.getFoundSet(globals.Server.MA_PRESENZE, globals.Table.GIORNALIERA_PROGFASCE);
 			if (fs.find()) {
 				fs.iddip = idLavoratore;
@@ -5244,7 +5248,7 @@ function incollaProgrammazioneSettimanaDipendente(_itemInd, _parItem, _isSel, _p
 	return;
 	
 	// acquisizione dei dati della settimana da copiare ed inserimento nella settimana da incollare
-	/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 	var fsFasceProg = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,globals.Table.GIORNALIERA_PROGFASCE);
 		
 	databaseManager.startTransaction();
@@ -5405,7 +5409,7 @@ function incollaProgrammazioneSettimana(_itemInd, _parItem, _isSel, _parMenTxt, 
 	}
 		
 	// acquisizione dei dati della settimana da copiare ed inserimento nella settimana da incollare
-	/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 	var fsFasceProg = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,globals.Table.GIORNALIERA_PROGFASCE);
 		
 	for (var l = 0; l < arrLavDaIncollare.length; l++) 
@@ -5657,7 +5661,7 @@ function gestisciModificaCoperturaOrario(currRec,orarioApertura,numIntervalli,gi
 	}
 	   
 	// eliminazione di eventuali fasce programmate precedentemente inserite per il dipendente nei giorni modificati
-	/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 	var fsFasceProg = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,globals.Table.GIORNALIERA_PROGFASCE);
 	
 	var sqlProgfasce = "DELETE FROM E2GiornalieraProgFasce WHERE idDip = ? AND Giorno = ?";
@@ -5774,7 +5778,7 @@ function inizializzaGiornProgFasceFestivita(arrLav,primoGGSettimana,ultimoGGSett
 				if(tipoReteImpresa == 2)
 					continue;
 				
-				/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+				/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 				var fsFasceProg = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,globals.Table.GIORNALIERA_PROGFASCE);
 				databaseManager.startTransaction();
 				
