@@ -112,7 +112,7 @@ function gestioneOreAssenza(idLavoratore,oreAssenza,giorno,settimana,fromCopertu
 			   throw new Error('Non è possibile inserire una assenza in un giorno festivo!');
 		}
 
-		/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+		/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 		var fs = databaseManager.getFoundSet(globals.Server.MA_PRESENZE, globals.Table.GIORNALIERA_PROGFASCE);
 		if (fs.find()) 
 		{

@@ -70,7 +70,7 @@ function exportReportSettimanaMP(idDitta,arrDipendenti,settimana,anno)
 					
 					// TODO gestione min e max da indicare in stampa
 					
-					/** @type {JSFoundset<db:/ma_anagrafiche/ditte_fasceorarietimbrature>}*/
+					/** @type {JSFoundSet<db:/ma_anagrafiche/ditte_fasceorarietimbrature>}*/
 					var fsFasciaTimbr = databaseManager.getFoundSet(globals.Server.MA_ANAGRAFICHE,globals.Table.FASCE_ORARIE_DITTA_TIMBRATURE);
 					if(fsFasciaTimbr.find())
 					{

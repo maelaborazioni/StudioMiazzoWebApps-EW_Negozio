@@ -95,7 +95,7 @@ function process_saving(event)
 		var frm = forms['neg_prog_giorno_tbl_temp']; 
 		var fs = frm.foundset;
 		
-		/** @type {JSFoundset<db:/ma_presenze/e2giornalieraprogfasce>} */
+		/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 		var fsFasceProg = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,globals.Table.GIORNALIERA_PROGFASCE);
 		
 		// ottenimento dei dati relativi ai lavoratori modificati
