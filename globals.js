@@ -4881,31 +4881,43 @@ function impostaRiposo(_itemInd, _parItem, _isSel, _parMenTxt, _menuTxt,event,id
 		    return;
 		}
         
-		// controllo duplicazione riposo primario o secondario
-		if (tiporiposo == 1 && globals.getGiornoRiposoSettimanale(idLavoratore, giorno, tiporiposo)) {
-			globals.ma_utl_showWarningDialog('Riposo primario precedentemente impostato per la settimana!');
-			return;
-		} else if (tiporiposo == 2 && globals.getGiornoRiposoSettimanale(idLavoratore, giorno, tiporiposo)) {
-			globals.ma_utl_showWarningDialog('Riposo secondario precedentemente impostato per la settimana!');
-			return;
+		if(tiporiposo == 0)
+		{
+			globals.eliminaFasceProgrammate([idLavoratore],giorno,giorno);
+			if(fromCopertura)
+				globals.preparaProgrammazioneCoperturaGiorno(giorno,index,globals.getTipoGestoreReteImpresa(),true);
+			else
+			{ 
+				// prepara programmazione settimanale
+				var frmSettName_0 = 'neg_prog_periodo_settimana_' + settimana;
+				/** @type {Form<neg_prog_periodo_settimana>}*/
+				var frmSett_0 = forms[frmSettName_0];
+				frmSett_0.preparaProgrammazioneSettimanaNegozio(settimana,anno,globals.getTipoGestoreReteImpresa(),fromCopertura);
+			}
 		}
+		else
+		{
+			// controllo duplicazione riposo primario o secondario
+			if (tiporiposo == 1 && globals.getGiornoRiposoSettimanale(idLavoratore, giorno, tiporiposo)) {
+				globals.ma_utl_showWarningDialog('Riposo primario precedentemente impostato per la settimana!');
+				return;
+			} else if (tiporiposo == 2 && globals.getGiornoRiposoSettimanale(idLavoratore, giorno, tiporiposo)) {
+				globals.ma_utl_showWarningDialog('Riposo secondario precedentemente impostato per la settimana!');
+				return;
+			}
 	    		
-		/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
-		var fs = databaseManager.getFoundSet(globals.Server.MA_PRESENZE, globals.Table.GIORNALIERA_PROGFASCE);
-		if (fs.find()) {
-			fs.iddip = idLavoratore;
-			fs.giorno = utils.dateFormat(giorno, globals.ISO_DATEFORMAT) + '|yyyyMMdd';
-
-			// se per il giorno è già stata programmata una fascia programmata questa non deve essere associata ad un idfasciatimbrature
-			// e dev'essere a zero ore per poterla impostare come riposo
-			if (fs.search()) {
-				var answer = true;
-				var msg = '';
-				
-				databaseManager.startTransaction();
-				
-				if(tiporiposo != 0)
-				{
+			/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
+			var fs = databaseManager.getFoundSet(globals.Server.MA_PRESENZE, globals.Table.GIORNALIERA_PROGFASCE);
+			if (fs.find()) {
+				fs.iddip = idLavoratore;
+				fs.giorno = utils.dateFormat(giorno, globals.ISO_DATEFORMAT) + '|yyyyMMdd';
+	
+				// se per il giorno è già stata programmata una fascia programmata questa non deve essere associata ad un idfasciatimbrature
+				// e dev'essere a zero ore per poterla impostare come riposo
+				if (fs.search()) {
+					var answer = true;
+					var msg = '';
+								
 					if (fs.e2giornalieraprogfasce_to_ditte_fasceorarietimbrature 
 							&& (fs.e2giornalieraprogfasce_to_ditte_fasceorarietimbrature.inizioorario || fs.e2giornalieraprogfasce_to_ditte_fasceorarietimbrature.fineorario)) 
 					{
@@ -4925,6 +4937,8 @@ function impostaRiposo(_itemInd, _parItem, _isSel, _parMenTxt, _menuTxt,event,id
 
 					if(answer)
 					{    
+						databaseManager.startTransaction();
+						
 						if(forms.neg_header_options.vArrGiorniFestivi.indexOf(utils.dateFormat(giorno,globals.ISO_DATEFORMAT)) != -1)
 						{  
 							if(globals.getOreFestivitaGoduta(utils.dateFormat(giorno,globals.ISO_DATEFORMAT),idLavoratore))
@@ -4933,65 +4947,61 @@ function impostaRiposo(_itemInd, _parItem, _isSel, _parMenTxt, _menuTxt,event,id
 						fs.idfasciaoraria = globals.getFasciaOrariaDaTotaleOre(globals.getDitta(idLavoratore),0).idfasciaoraria;
 						fs.tiporiposo = tiporiposo;
 					}
-
+				
+//						var totOreProg = globals.calcolaOreEventoFasciaOrariaTimbrature(fs.iddittafasciaorariatimbrature);
+//						if(totOreProg == 0
+//						   && forms.neg_header_options.vArrGiorniFestivi.indexOf(utils.dateFormat(giorno,globals.ISO_DATEFORMAT)) != -1)
+//						   totOreProg = globals.getOreFestivitaGoduta(utils.dateFormat(giorno,globals.ISO_DATEFORMAT),idLavoratore);
+//						fs.idfasciaoraria = globals.getFasciaOrariaDaTotaleOre(globals.getDitta(idLavoratore),totOreProg * 100).idfasciaoraria;
+//						fs.tiporiposo = tiporiposo;
+										
+				}
+					
+				// se non è ancora associata una fascia programmata, procediamo ad inserirla come fascia a zero ore e tipo di riposo indicato
+				else {
+						databaseManager.startTransaction();
+						var newProg = fs.getRecord(fs.newRecord())
+						if (!newProg)
+							throw new Error('Errore durante la creazione del record nella tabella E2GiornalieraProgFasce');
+		
+						newProg.iddip = idLavoratore;
+						newProg.giorno = giorno;
+						newProg.idfasciaoraria = globals.getFasciaOrariaDaTotaleOre(globals.getDitta(idLavoratore), 0).idfasciaoraria;
+						newProg.tiporiposo = tiporiposo;
+						newProg.idfasciaorariafittizia = null;
+						newProg.iddittafasciaorariatimbrature = null;
+						newProg.festivo = false;
+						if(forms.neg_header_options.vArrGiorniFestivi.indexOf(utils.dateFormat(giorno, globals.ISO_DATEFORMAT)) != -1)
+							if(globals.getOreFestivitaGoduta(utils.dateFormat(giorno,globals.ISO_DATEFORMAT),idLavoratore))
+							   newProg.festivo = 1;
+				}
+			
+				var success = databaseManager.commitTransaction();
+				if (!success) {
+					var failedrecords = databaseManager.getFailedRecords();
+					if (failedrecords && failedrecords.length > 0)
+						throw new Error('Errore durante il salvataggio dell\'impostazione del giorno di riposo');
 				}
 				else
 				{
-					if(answer)
-					{
-						var totOreProg = globals.calcolaOreEventoFasciaOrariaTimbrature(fs.iddittafasciaorariatimbrature);
-						if(totOreProg == 0
-						   && forms.neg_header_options.vArrGiorniFestivi.indexOf(utils.dateFormat(giorno,globals.ISO_DATEFORMAT)) != -1)
-						   totOreProg = globals.getOreFestivitaGoduta(utils.dateFormat(giorno,globals.ISO_DATEFORMAT),idLavoratore);
-						fs.idfasciaoraria = globals.getFasciaOrariaDaTotaleOre(globals.getDitta(idLavoratore),totOreProg * 100).idfasciaoraria;
-						fs.tiporiposo = tiporiposo;
-						
+					if(fromCopertura)
+						globals.preparaProgrammazioneCoperturaGiorno(giorno,index,globals.getTipoGestoreReteImpresa(),true);
+					else
+					{ 
+						// prepara programmazione settimanale
+						var frmSettName_1 = 'neg_prog_periodo_settimana_' + settimana;
+						/** @type {Form<neg_prog_periodo_settimana>}*/
+						var frmSett_1 = forms[frmSettName_1];
+						frmSett_1.preparaProgrammazioneSettimanaNegozio(settimana,anno,globals.getTipoGestoreReteImpresa(),fromCopertura);
 					}
 				}
-				
-								
-			}
-			// se non è ancora associata una fascia programmata, procediamo ad inserirla come fascia a zero ore e tipo di riposo indicato
-			else {
-				databaseManager.startTransaction();
-				var newProg = fs.getRecord(fs.newRecord())
-				if (!newProg)
-					throw new Error('Errore durante la creazione del record nella tabella E2GiornalieraProgFasce');
-
-				newProg.iddip = idLavoratore;
-				newProg.giorno = giorno;
-				newProg.idfasciaoraria = globals.getFasciaOrariaDaTotaleOre(globals.getDitta(idLavoratore), 0).idfasciaoraria;
-				newProg.tiporiposo = tiporiposo;
-				newProg.idfasciaorariafittizia = null;
-				newProg.iddittafasciaorariatimbrature = null;
-				newProg.festivo = false;
-				if(forms.neg_header_options.vArrGiorniFestivi.indexOf(utils.dateFormat(giorno, globals.ISO_DATEFORMAT)) != -1)
-					if(globals.getOreFestivitaGoduta(utils.dateFormat(giorno,globals.ISO_DATEFORMAT),idLavoratore))
-					   newProg.festivo = 1;
-			}
-			
-			var success = databaseManager.commitTransaction();
-			if (!success) {
-				var failedrecords = databaseManager.getFailedRecords();
-				if (failedrecords && failedrecords.length > 0)
-					throw new Error('Errore durante il salvataggio dell\'impostazione del giorno di riposo');
 			}
 			else
-			{
-				if(fromCopertura)
-					globals.preparaProgrammazioneCoperturaGiorno(giorno,index,globals.getTipoGestoreReteImpresa(),true);
-				else
-				{ 
-					// prepara programmazione settimanale
-					var frmSettName = 'neg_prog_periodo_settimana_' + settimana;
-					/** @type {Form<neg_prog_periodo_settimana>}*/
-					var frmSett = forms[frmSettName];
-					frmSett.preparaProgrammazioneSettimanaNegozio(settimana,anno,globals.getTipoGestoreReteImpresa(),fromCopertura);
-				}
-			}
-		} else
 			throw new Error('Cannot go to find mode');
-	} catch (ex) {
+		}
+	}
+	catch (ex) 
+	{
 		application.output(ex.message, LOGGINGLEVEL.ERROR);
 		databaseManager.rollbackTransaction();
 		globals.ma_utl_showErrorDialog(ex.message);
