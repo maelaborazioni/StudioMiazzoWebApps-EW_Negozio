@@ -118,6 +118,8 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 	dsGiornoNegozio.addColumn('ore_ordinario',19,JSColumn.NUMBER);
 	types.push(JSColumn.NUMBER);
 	dsGiornoNegozio.addColumn('tirocinante',20,JSColumn.NUMBER);
+	types.push(JSColumn.NUMBER);
+	dsGiornoNegozio.addColumn('ha_richieste',21,JSColumn.NUMBER);
 	
 	// compilazione del dataset ad hoc per presentazione 
 	for(var l = 1; l <= numLavoratori; l++)
@@ -142,6 +144,7 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 		dsGiornoNegozio.setValue(l,18,null);
 		dsGiornoNegozio.setValue(l,19,null);
 		dsGiornoNegozio.setValue(l,20,null);
+		dsGiornoNegozio.setValue(l,21,null);
 		
 		// verifica se lavoratore non ancora assunto o già cessato
 		var dataAss = globals.getDataAssunzione(arrLavoratori[l - 1]); 
@@ -168,7 +171,13 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 	    	if(globals.getOreFestivitaGoduta(utils.dateFormat(giorno,globals.ISO_DATEFORMAT),arrLavoratori[l - 1]))
 			//if(globals.getOreFestivitaDipendente(arrLavoratori[l - 1],giorno,recFasciaProg.idfasciaoraria) != null)
 	    	   giornoFestivo = true;
-						
+		
+	    // verifica se presenti richieste confermate
+	    var recGiornBudget = globals.getRecGiornaliera(arrLavoratori[l - 1],giorno,globals.TipoGiornaliera.BUDGET);
+		var haRichiesta = (recGiornBudget 
+				           && recGiornBudget.e2giornaliera_to_e2giornalieraeventi
+						   && recGiornBudget.e2giornaliera_to_e2giornalieraeventi.idevento) ? 1 : 0;
+	    
 		// se non è presente una fascia programmata consideriamo quella a zero ore e la compiliamo automaticamente verificando se sia  anche riposo primario
 		if(recFasciaProg == null)
 		{	
@@ -185,6 +194,8 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 			
 			dsGiornoNegozio.setValue(l,9,null);
 			dsGiornoNegozio.setValue(l,19,dsGiornoNegozio.getValue(l,9));
+			
+			dsGiornoNegozio.setValue(l,21,haRichiesta);
 						
 		}
 		// se è una fascia a zero ore (senza avere quindi timbrature programmate) o corrisponde ad un orario inserito
@@ -264,6 +275,7 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 				if(oreTeoriche == 0)
 					dsGiornoNegozio.setValue(l,16,recFasciaProg.tiporiposo);
 				
+				dsGiornoNegozio.setValue(l,21,haRichiesta);				
 			}			
 			
 			dsGiornoNegozio.setValue(l,8,oreProgrammate > 0 ? oreProgrammate : null);
@@ -836,7 +848,16 @@ function disegnaProgrammazioneGiornoNegozio(dSource,idDitta,giorno,numDip)
 	lblOreStraordinario.labelFor = fldOreStraordinario.name;
 	lblOreStraordinario.styleClass = 'table_header';
 	lblOreStraordinario.horizontalAlignment = SM_ALIGNMENT.CENTER;
-		
+	
+	// ha richieste nel giorno
+	var fldRichiesta = frmNeg.newTextField('ha_richiesta',dxCodice + dxNominativo + dxTimbr * 4 + dxOre * 6,dyLbl,dxOre,dyFld);
+	fldRichiesta.dataProviderID = 'ha_richiesta';
+	fldRichiesta.name = 'fld_ha_richiesta';
+	fldRichiesta.styleClass = 'table';
+	fldRichiesta.horizontalAlignment = SM_ALIGNMENT.CENTER;
+	fldRichiesta.enabled = false;
+	fldRichiesta.visible = false;
+	
 	forms.neg_prog_giorno_tab.elements.lbl_header.text = 'Giorno : ' + globals.getNomeInteroGiorno(giorno) + ' ' + globals.getNumGiorno(giorno) + '/' + 
 	                                                     globals.getNumMese(giorno.getMonth() + 1) + '/' + giorno.getFullYear();
 	forms.neg_prog_giorno_tab.elements.tab_prog_giorno.addTab(frmNewName);
@@ -2629,6 +2650,12 @@ function onRenderGiornoNegozio(event)
 			ren.toolTipText = 'Dipendente non ancora assunto o già cessato non modificabile';
 			ren.enabled = false;
 		}
+		else if(rec['ha_richieste'])
+		{
+			ren.bgcolor = 'gray';
+			ren.toolTipText = 'Non è possibile programmare i giorni che hanno una richiesta di ferie/permessi associata';
+			ren.enabled = false;
+		}
 		else if(rec['regola_zero_ore'] == 1 && !rec['tirocinante'])
 		{
 			ren.bgcolor = 'gray';
@@ -2700,6 +2727,12 @@ function onRenderGiornoNegozioOreTeoriche(event)
 		{
 			ren.bgcolor = '#c8c8c8';
 			ren.toolTipText = 'Dipendente non ancora assunto o già cessato non modificabile';
+			ren.enabled = false;
+		}
+		else if(rec['ha_richiesta'])
+		{
+			ren.bgcolor = 'gray';
+			ren.toolTipText = 'Non è possibile programmare i giorni che hanno una richiesta di ferie/permessi associata';
 			ren.enabled = false;
 		}
 		else if(rec['regola_zero_ore'] == 1)
