@@ -170,6 +170,8 @@ function preparaProgrammazioneSettimanaNegozio(settimana,anno,tipoReteImpresa,fr
 			
 			// eventuali eventi in giornaliera di budget
 			var recGiornBudget = globals.getRecGiornaliera(arrLav[l - 1],giorno,globals.TipoGiornaliera.BUDGET);
+			var recsGiornEvBudget = recGiornBudget != null ? globals.getRecsGiornalieraEventi(recGiornBudget.idgiornaliera) : null;
+			var recGiornEvBudget = recsGiornEvBudget != null ? recsGiornEvBudget.getRecord(1) : null; // per semplicità consideriamo solo il primo record
 			// eventuale programmazione fasce inserita
 			var recFasciaProg = scopes.giornaliera.getProgrammazioneFasceGiorno(arrLav[l-1],giorno);
 			
@@ -234,10 +236,11 @@ function preparaProgrammazioneSettimanaNegozio(settimana,anno,tipoReteImpresa,fr
 						else if(oreTeoGiorno > 0)
 						{
 							// verificare se corrispondente evento PD in giornaliera di budget
-							if(recGiornBudget 
-							   && recGiornBudget.e2giornaliera_to_e2giornalieraeventi
-							   && recGiornBudget.e2giornaliera_to_e2giornalieraeventi.e2giornalieraeventi_to_e2eventi)
-								arr[g + 1] = recGiornBudget.e2giornaliera_to_e2giornalieraeventi.e2giornalieraeventi_to_e2eventi.evento + ' ' + recGiornBudget.e2giornaliera_to_e2giornalieraeventi.ore / 100;
+							if(recGiornBudget)
+							{
+							   if(recGiornEvBudget)
+							   	  arr[g + 1] = recGiornEvBudget.e2giornalieraeventi_to_e2eventi.evento + ' ' + recGiornEvBudget.ore / 100;
+							}
 							else
 							    arr[g + 1] = '? ' + (oreTeoGiorno - oreProgGiorno);
 						}
@@ -255,11 +258,10 @@ function preparaProgrammazioneSettimanaNegozio(settimana,anno,tipoReteImpresa,fr
 						else if(oreProgGiorno - oreTeoGiorno < 0)
 						{
 							// verificare se corrispondente evento PD in giornaliera di budget
-							if(recGiornBudget
-							   && recGiornBudget.e2giornaliera_to_e2giornalieraeventi
-							   && recGiornBudget.e2giornaliera_to_e2giornalieraeventi.e2giornalieraeventi_to_e2eventi)
-							   arr[g + 1] = oreProgGiorno.toString() + '(' + recGiornBudget.e2giornaliera_to_e2giornalieraeventi.e2giornalieraeventi_to_e2eventi.evento + ' ' + recGiornBudget.e2giornaliera_to_e2giornalieraeventi.ore / 100 + ')';
-							arr[g + 1] = oreProgGiorno.toString() + '(? ' + (oreTeoGiorno - oreProgGiorno) + ')';
+							if(recGiornBudget && recGiornEvBudget)
+							  arr[g + 1] = oreProgGiorno.toString() + '(' + recGiornEvBudget.e2giornalieraeventi_to_e2eventi.evento + ' ' + recGiornEvBudget.ore / 100 + ')';
+							else
+  							   arr[g + 1] = oreProgGiorno.toString() + '(? ' + (oreTeoGiorno - oreProgGiorno) + ')';
 						}
 						else
 					        arr[g + 1] = oreProgGiorno.toString();	
@@ -287,13 +289,13 @@ function preparaProgrammazioneSettimanaNegozio(settimana,anno,tipoReteImpresa,fr
 			{
 				// controllo caso nessuna programmazione fasce ma presenza di eventi in budget
 				// verificare se corrispondente evento PD in giornaliera di budget
-				if(recGiornBudget 
-				   && recGiornBudget.e2giornaliera_to_e2giornalieraeventi
-				   && recGiornBudget.e2giornaliera_to_e2giornalieraeventi.e2giornalieraeventi_to_e2eventi)
+				if(recGiornBudget) 
 				{
-					arr[g + 1] = recGiornBudget.e2giornaliera_to_e2giornalieraeventi.e2giornalieraeventi_to_e2eventi.evento + ' ' + recGiornBudget.e2giornaliera_to_e2giornalieraeventi.ore / 100;
-				    oreTeoGiorno = recGiornBudget.e2giornaliera_to_e2giornalieraeventi.ore / 100;
-					
+					if(recGiornEvBudget && recGiornEvBudget.ore)
+					{
+						arr[g + 1] = recGiornEvBudget.e2giornalieraeventi_to_e2eventi.evento + ' ' + recGiornEvBudget.ore / 100;
+						oreTeoGiorno = recGiornEvBudget.ore / 100;
+					}
 				}
 			}
 			
