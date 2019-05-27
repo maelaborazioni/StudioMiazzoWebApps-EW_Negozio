@@ -1,0 +1,7 @@
+allowCreationRelatedRecords:true,
+deleteRelatedRecords:true,
+foreignDataSource:"db:/ma_presenze/e2giornalieraprogfasceblocchi",
+name:"e2giornalieraprogfasceblocchi_to_e2giornalieraprogfasceblocchi",
+primaryDataSource:"db:/ma_presenze/e2giornalieraprogfasceblocchi",
+typeid:22,
+uuid:"42BFA996-3BF7-4A55-9228-B32E94E257BA"

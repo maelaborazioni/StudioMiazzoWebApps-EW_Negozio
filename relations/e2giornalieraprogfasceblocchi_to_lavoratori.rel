@@ -1,0 +1,9 @@
+foreignDataSource:"db:/ma_anagrafiche/lavoratori",
+items:[
+{foreignColumnName:"idlavoratore",primaryDataProviderID:"idlavoratore",typeid:23,uuid:"5F55FC6B-33D2-4DA6-AEEF-0FFD2DAD0B44"}
+],
+joinType:1,
+name:"e2giornalieraprogfasceblocchi_to_lavoratori",
+primaryDataSource:"db:/ma_presenze/e2giornalieraprogfasceblocchi",
+typeid:22,
+uuid:"038642DA-1C4B-4ACF-B2CF-6E5207FFA354"

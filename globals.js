@@ -120,6 +120,8 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 	dsGiornoNegozio.addColumn('tirocinante',20,JSColumn.NUMBER);
 	types.push(JSColumn.NUMBER);
 	dsGiornoNegozio.addColumn('ha_richieste',21,JSColumn.NUMBER);
+	types.push(JSColumn.NUMBER);
+	dsGiornoNegozio.addColumn('bloccato',22,JSColumn.NUMBER);
 	
 	// compilazione del dataset ad hoc per presentazione 
 	for(var l = 1; l <= numLavoratori; l++)
@@ -145,6 +147,7 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 		dsGiornoNegozio.setValue(l,19,null);
 		dsGiornoNegozio.setValue(l,20,null);
 		dsGiornoNegozio.setValue(l,21,null);
+		dsGiornoNegozio.setValue(l,22,null);
 		
 		// verifica se lavoratore non ancora assunto o già cessato
 		var dataAss = globals.getDataAssunzione(arrLavoratori[l - 1]); 
@@ -163,7 +166,7 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 			dsGiornoNegozio.setValue(l,15,1);
 		
 		// recupero dei dati esistenti per la programmazione del giorno
-		var recFasciaProg = scopes.giornaliera.getProgrammazioneFasceGiorno(arrLavoratori[l-1],giorno);
+		var recFasciaProg = scopes.giornaliera.getProgrammazioneFasceGiorno(arrLavoratori[l - 1],giorno);
 		
 		// verifica se il giorno è festivo
 	    var giornoFestivo = false;
@@ -304,7 +307,11 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 			if(isTirocinante(arrLavoratori[l - 1]))
 				dsGiornoNegozio.setValue(l,20,1);
 		}
-						
+		
+		// verifica blocco su programmazione
+		var fsProgFasceBlocco = getProgFasceBlocco([arrLavoratori[l - 1]],giorno);
+		if(fsProgFasceBlocco && fsProgFasceBlocco.getSize()) 
+			dsGiornoNegozio.setValue(l,22,1);				
 	}
 	
 	// disegno della situazione di programmazione negozio
@@ -432,6 +439,7 @@ function preparaProgrammazioneSettimanaNegozio(idDitta,arrLavoratori,settimana,s
 		dsGiornoNegozio.addColumn('tipo_riposo_' + g,stdColNumber + 14 * (g - 1) + 13,JSColumn.NUMBER);
 		types.push(JSColumn.NUMBER);
 		dsGiornoNegozio.addColumn('non_attivo_' + g,stdColNumber + 14 * (g - 1) + 14,JSColumn.NUMBER);
+		
 	}
 	
 	types.push(JSColumn.NUMBER);
@@ -610,7 +618,13 @@ function preparaProgrammazioneSettimanaNegozio(idDitta,arrLavoratori,settimana,s
 				dsGiornoNegozio.setValue(l,stdColNumber + 14 * (g - 1) + 12,recFasciaProg.tiporiposo);
 				dsGiornoNegozio.setValue(l,dsGiornoNegozio.getMaxColumnIndex(),dsGiornoNegozio.getValue(l,dsGiornoNegozio.getMaxColumnIndex()) + dsGiornoNegozio.getValue(l,stdColNumber + 14 * (g - 1) + 5));
 			}
-						
+		
+//			// verifica esistenza blocco programmazione fasce
+//			var fsProgFasceBlocco = getProgFasceBlocco(arrLavoratori[l - 1],giorno);
+//			if(fsProgFasceBlocco && fsProgFasceBlocco.getSize())
+//				dsGiornoNegozio.setValue(l,stdColNumber + 14 * (g - 1) + 15,1);
+//			else 
+//				dsGiornoNegozio.setValue(l,stdColNumber + 14 * (g - 1) + 15,0);
 		}		
 	}
 			
@@ -1052,6 +1066,14 @@ function disegnaProgrammazioneSettimanaNegozio(dSet,idDitta,settimana,numDip,sel
 				fldE1.toolTipText = fldU1.toolTipText = fldE2.toolTipText = fldU2.toolTipText = 'Non è possibile programmare i giorni che hanno una richiesta di ferie/permessi associata';
 			}
 			
+			// verifica blocco programmazione
+			var fsProgFasceBlocco = globals.getProgFasceBlocco(dSet.getValue(l,1),currGiorno);
+			if(fsProgFasceBlocco && fsProgFasceBlocco.getSize())
+			{
+				fldE1.enabled = fldU1.editable = fldE2.enabled = fldU2.enabled = false;
+				fldE1.toolTipText = fldU1.toolTipText = fldE2.toolTipText = fldU2.toolTipText = 'La programmazione del giorno per il dipendente risulta bloccata';
+			}
+				
 			// ore totali giorno
 			var varOreGiorno = frmNeg.newVariable('ore_programmato_' + l + '_' + g,JSVariable.TEXT,"'" + dSet.getValue(l,8 + 14 * (g - 1)) + "'");
 			var fldOreGiorno = frmNeg.newTextField(varOreGiorno.name,dxCodice + dxNominativo + (5 * (g - 1) + 4) * dxTimbr,l * dyLbl,dxTimbr,dyFld);
@@ -2650,6 +2672,12 @@ function onRenderGiornoNegozio(event)
 			ren.toolTipText = 'Dipendente non ancora assunto o già cessato non modificabile';
 			ren.enabled = false;
 		}
+		else if(rec['bloccato'])
+		{
+			ren.bgcolor = 'gray';
+			ren.toolTipText = 'La programmazione per il giorno è stata bloccata'; 
+			ren.enabled = false;
+		}
 		else if(rec['ha_richieste'])
 		{
 			ren.bgcolor = 'gray';
@@ -2661,7 +2689,7 @@ function onRenderGiornoNegozio(event)
 			ren.bgcolor = 'gray';
 			ren.toolTipText = 'Dipendente con regola a zero ore non modificabile';
 			ren.enabled = false;
-		}
+		}	
 		
 		if(elemName == 'fld_ore_programmato' || elemName == 'fld_ore_ordinario'  || elemName == 'fld_ore_festivo' || elemName == 'fld_ore_straordinario' || elemName == 'fld_ore_assenza')
 		{
@@ -2703,6 +2731,12 @@ function onRenderSettimanaNegozio(event)
 				ren.toolTipText = 'Dipendente con regola a zero ore non modificabile';
 				ren.enabled = false;
 		    }
+		    else if(rec['tipo_riposo_' + elemIndex] && rec['ore_festivo_' + elemIndex])
+			{
+				ren.bgcolor = 'gray';
+				ren.toolTipText = 'Riposo su giorno festivo impostato dall\'Amministrazione e non modificabile';
+				ren.enabled = false;
+			}
 		    
 		}
 				
@@ -4658,6 +4692,25 @@ function onRightClickIntervallo(event)
     
 	var popUpMenu = plugins.window.createPopupMenu();
     
+	// blocco per ulteriore programmazione fasce
+	if(globals.ma_utl_hasKey(globals.Key.NEGOZIO_BLOCCO))
+	{
+		var fsProgFasceBlocco = getProgFasceBlocco([forms[frmName].foundset.getRecord(index)['idlavoratore']],giorno);
+		if(fsProgFasceBlocco && fsProgFasceBlocco.getSize())
+		{
+			var sbloccaProg = popUpMenu.addMenuItem('Rimuovi blocco programmazione giorno per dipendente',sbloccaProgrammazione);
+			sbloccaProg.methodArguments = [forms[frmName].foundset.getRecord(index)['idlavoratore'],giorno]; 
+		    sbloccaProg.enabled = true;
+		}
+		else
+		{
+			var bloccaProg = popUpMenu.addMenuItem('Imposta blocco programmazione giorno per dipendente',bloccaProgrammazione);
+			bloccaProg.methodArguments = [forms[frmName].foundset.getRecord(index)['idlavoratore'],giorno]; 
+		    bloccaProg.enabled = true;
+		}
+	    popUpMenu.addSeparator();
+	}
+	
 	var modificaSett = popUpMenu.addMenuItem('Modifica la settimana',apriPopupProgrammazioneSettimana);
 	modificaSett.methodArguments = [event,numSettimana,giorno,index,true];
 	modificaSett.enabled = enabled;
@@ -4709,7 +4762,7 @@ function onRightClickIntervallo(event)
 	stampaGiorno.methodArguments = [event,forms.neg_header_dtl.idditta,giorno,globals.getTipoGestoreReteImpresa()];
 	var stampaCopSett = popUpMenu.addMenuItem('Stampa la copertura della settimana',scopes.neg_reports.confermaEsportazioneProgrammazionePeriodo);
 	stampaCopSett.methodArguments = [event,forms.neg_header_dtl.idditta,primoGgSettimana,ultimoGgSettimana,globals.getTipoGestoreReteImpresa()];
-	
+		
 	popUpMenu.show(event.getSource());
 }
 
@@ -4899,7 +4952,7 @@ function impostaRiposo(_itemInd, _parItem, _isSel, _parMenTxt, _menuTxt,event,id
         {
 			if(globals.getOreFestivitaGoduta(globals.dateFormat(giorno,globals.ISO_DATEFORMAT).toString(),idLavoratore))
 			{
-				globals.ma_utl_showWarningDialog('Non è possibile eliminare la programmazione per un giorno festivo','Programmazione giorno negozio');
+				globals.ma_utl_showWarningDialog('Non è possibile impostare o rimuovere un riposo per un giorno festivo','Programmazione giorno negozio');
 			    return;
 			}
         }
@@ -4910,7 +4963,7 @@ function impostaRiposo(_itemInd, _parItem, _isSel, _parMenTxt, _menuTxt,event,id
    		   && recGiornBudget.e2giornaliera_to_e2giornalieraeventi
 		   && recGiornBudget.e2giornaliera_to_e2giornalieraeventi.idevento)
 		{
-			globals.ma_utl_showWarningDialog('Non è possibile eliminare la programmazione per un giorno con una richiesta di ferie/permessi associata','Programmazione giorno negozio');
+			globals.ma_utl_showWarningDialog('Non è possibile impostare un riposo per un giorno con una richiesta di ferie/permessi associata','Programmazione giorno negozio');
 		    return;
 		}
         
@@ -5070,6 +5123,50 @@ function inserisciAssenza(_itemInd, _parItem, _isSel, _parMenTxt, _menuTxt,event
 }
 
 /**
+ * Blocca la possibilità di ulteriore programmazione del lavoratore nel giorno
+ * 
+ * @param _itemInd
+ * @param _parItem
+ * @param _isSel
+ * @param _parMenTxt
+ * @param _menuTxt
+ * @param idLavoratore
+ * @param giorno
+ *
+ * @properties={typeid:24,uuid:"39DE2473-17F1-4420-B826-382A44837EDF"}
+ */
+function bloccaProgrammazione(_itemInd, _parItem, _isSel, _parMenTxt, _menuTxt, idLavoratore, giorno)
+{
+	if(setProgFasceBlocco([idLavoratore],giorno))
+		globals.ma_utl_showInfoDialog('Blocco della programmazione avvenuto correttamente per il dipendente ' + globals.getNominativo(idLavoratore) 
+			                          + ' nel giorno ' + globals.dateFormat(giorno,globals.EU_DATEFORMAT),'Programmazione negozio')
+	else
+		globals.ma_utl_showErrorDialog('L\'operazione di blocco della programmazione non è riuscita','Programmazione negozio');
+}
+
+/**
+ * Sblocca una situazione di blocco sulla programmazione del lavoratore nel giorno
+ * 
+ * @param _itemInd
+ * @param _parItem
+ * @param _isSel
+ * @param _parMenTxt
+ * @param _menuTxt
+ * @param idLavoratore
+ * @param giorno
+ *
+ * @properties={typeid:24,uuid:"885E4BCB-B706-419E-8F82-AC5ED433306F"}
+ */
+function sbloccaProgrammazione(_itemInd, _parItem, _isSel, _parMenTxt, _menuTxt, idLavoratore, giorno)
+{
+	if(deleteProgFasceBlocco(idLavoratore,giorno))
+		globals.ma_utl_showInfoDialog('Sblocco della programmazione avvenuto correttamente per il dipendente ' + globals.getNominativo(idLavoratore) 
+			                          + ' nel giorno ' + globals.dateFormat(giorno,globals.EU_DATEFORMAT),'Programmazione negozio')
+	else
+		globals.ma_utl_showErrorDialog('L\'operazione di blocco della programmazione non è riuscita','Programmazione negozio');
+}
+
+/**
 * @param _itemInd
 * @param _parItem
 * @param _isSel
@@ -5155,7 +5252,7 @@ function impostaChiusuraNegozio(_itemInd, _parItem, _isSel, _parMenTxt, _menuTxt
 						globals.ma_utl_showErrorDialog('Errore durante la gestione del giorno di chiusura del punto vendita', 'Imposta punto vendita chiuso');
 						return;
 					} else
-					// prepara programmazione settimanale
+						// prepara programmazione settimanale
 						frmSett.preparaProgrammazioneSettimanaNegozio(settimana,anno,globals.getTipoGestoreReteImpresa());
 
 				}
@@ -5434,21 +5531,18 @@ function incollaProgrammazioneSettimana(_itemInd, _parItem, _isSel, _parMenTxt, 
 	
 	if(bFestCopia)
 	{
-		answer = globals.ma_utl_showYesNoQuestion('La settimana che si sta copiando contiene un giorno festivo. <br/>\
-            Si desidera proseguire comunque?<br/>\
-            Controllare nella settimana incollata i valori delle ore teoriche e di straordinario per il giorno corrispondente','Copia programmazione settimana');
-		if(!answer)
-			return;
+		globals.ma_utl_showWarningDialog('La settimana che si sta copiando contiene un giorno festivo. <br/>\
+                                         Non può essere copiata.',
+										 'Copia programmazione settimana');
+		return;
 	}
 	
 	if(bFestIncolla)
 	{
-	   answer = globals.ma_utl_showYesNoQuestion('La settimana sulla quale si sta per incollare contiene un giorno festivo. <br/>\
-	                                              Per tale giorno le ore teoriche non verranno riportate ma rimarranno quelle di default.\
-	                                              Si desidera proseguire comunque?<br/>\
-                                                  Controllare nella settimana incollata i valori delle ore teoriche e di straordinario per il giorno corrispondente','Incolla programmazione settimana');
-		if(!answer)
-			return;
+	   globals.ma_utl_showWarningDialog('La settimana sulla quale si sta per incollare contiene un giorno festivo. <br/>\
+	                                    Non può essere incollata.',
+										'Incolla programmazione settimana');
+		return;
 	}
 		
 	// acquisizione dei dati della settimana da copiare ed inserimento nella settimana da incollare
@@ -5916,4 +6010,101 @@ function eliminaProgrammazioneGiornoNegozio(_itemInd,_parItem,_isSel,_parMenTxt,
 		var frmSett = forms[frmSettName];
 		frmSett.preparaProgrammazioneSettimanaNegozio(settimana,giorno.getFullYear(),globals.getTipoGestoreReteImpresa(),fromCopertura);
 	}
+}
+
+/**
+ * Restituisce l'eventuale blocco relativo alla programmazione fasce per il lavoratore nel giorno
+ * 
+ * @param {Array<Number>} arrLavoratori
+ * @param {Date} giorno
+ * 
+ * @return {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasceblocchi>}
+ * 
+ * @properties={typeid:24,uuid:"2CC5DB26-9924-4287-8A51-3131CD2D18A6"}
+ * @AllowToRunInFind
+ */
+function getProgFasceBlocco(arrLavoratori,giorno)
+{
+	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasceblocchi>}*/
+	var fs = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,'e2giornalieraprogfasceblocchi');
+	if(fs.find())
+	{
+		fs.idlavoratore = arrLavoratori;
+		fs.giorno = globals.dateFormat(giorno,globals.ISO_DATEFORMAT) + '|yyyyMMdd';
+		
+		if(fs.search())
+			return fs;
+	}
+	
+	return null;
+}
+
+/**
+ * Imposta il nuovo blocco sulla programmazione fasce per il lavoratore nel giorno
+ * 
+ * @param {Array<Number>} arrLavoratori
+ * @param {Date} giorno
+ * 
+ * @return {Boolean}
+ * 
+ * @properties={typeid:24,uuid:"B383E4B1-2292-4F4D-8DA6-41A34FF93C7E"}
+ */
+function setProgFasceBlocco(arrLavoratori,giorno)
+{
+	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasceblocchi>}*/
+	var fs = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,'e2giornalieraprogfasceblocchi');
+    
+	databaseManager.startTransaction();
+	
+	for(var l = 0; l < arrLavoratori.length; l++)
+	{
+		var newRec = fs.getRecord(fs.newRecord());
+		newRec.idlavoratore = arrLavoratori[l];
+		newRec.giorno = giorno;
+	}
+	
+	if(!databaseManager.commitTransaction())
+	{
+		databaseManager.rollbackTransaction();
+		return false;
+	}
+	
+	return true;
+}
+
+/**
+ * Rimuove il blocco sulla programmazione fasce per il lavoratore nel giorno
+ * 
+ * @param {Number} idLavoratore
+ * @param {Date} giorno
+ * 
+ * @return {Boolean}
+ * 
+ * @properties={typeid:24,uuid:"F408C9D8-A087-440A-8EF5-084801DF183A"}
+ * @AllowToRunInFind
+ */
+function deleteProgFasceBlocco(idLavoratore,giorno)
+{
+	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasceblocchi>}*/
+	var fs = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,'e2giornalieraprogfasceblocchi');
+    
+	if(fs.find())
+	{
+		fs.idlavoratore = idLavoratore;
+		fs.giorno = globals.dateFormat(giorno,globals.ISO_DATEFORMAT) + '|yyyyMMdd';;
+		
+		if(fs.search())
+			return fs.deleteAllRecords();
+	}
+	
+	return false;
+}
+
+/**
+ * @properties={typeid:24,uuid:"1672CBC3-6A4F-459D-87CA-3F455CB29A03"}
+ */
+function apriBloccaProgrammazione()
+{
+	var frm = forms.neg_blocco;
+	globals.ma_utl_showFormInDialog(frm.controller.getName(),'Blocco della  programmazione giorni');
 }

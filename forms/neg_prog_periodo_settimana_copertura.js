@@ -111,16 +111,17 @@ function onRightClickGiorno(event)
 	}
 	
 	var giorno = new Date(primoGgSettimana.getFullYear(),primoGgSettimana.getMonth(), primoGgSettimana.getDate() + offsetGiornoSettimana);
-    
-	if(!globals.ma_utl_hasKey(globals.Key.ADMIN_NEG)
-		&& (giorno == globals.getChristmas(anno) 
-			|| giorno == globals.getBoxingDay(anno) 
-			|| giorno == globals.getFirstYearDay(anno)
-			|| giorno == globals.getFirstYearDay(anno + 1)))
-    {
-    	globals.ma_utl_showWarningDialog('Non è possibile programmare i giorni di chiusura del punto vendita','Prepara programmazione giorno');
-        return;
-    }
+
+	//  non sarà più necessario quando sarà introdotto il blocco della programmazione multiplo sugli specifici giorni     
+//	if(!globals.ma_utl_hasKey(globals.Key.ADMIN_NEG)
+//		&& (giorno == globals.getChristmas(anno) 
+//			|| giorno == globals.getBoxingDay(anno) 
+//			|| giorno == globals.getFirstYearDay(anno)
+//			|| giorno == globals.getFirstYearDay(anno + 1)))
+//    {
+//    	globals.ma_utl_showWarningDialog('Non è possibile programmare i giorni di chiusura del punto vendita','Prepara programmazione giorno');
+//        return;
+//    }
 	
     // TODO ripristinare blocco su settimana trascorsa
 	// la modifica della settimana (o del singolo giorno) è bloccata se l'utente non è gestore
@@ -128,6 +129,25 @@ function onRightClickGiorno(event)
     var enabled = true;//globals.ma_utl_hasKey(globals.Key.AUT_GESTORE) || globals.TODAY > ultimoGgSettimana;
 	    	
 	var popUpMenu = plugins.window.createPopupMenu();
+    
+	// blocco per ulteriore programmazione fasce
+	if(globals.ma_utl_hasKey(globals.Key.NEGOZIO_BLOCCO))
+	{
+		var fsProgFasceBlocco = globals.getProgFasceBlocco(forms[frmName].foundset['idlavoratore'],giorno);
+		if(fsProgFasceBlocco && fsProgFasceBlocco.getSize())
+		{
+			var sbloccaProg = popUpMenu.addMenuItem('Rimuovi blocco programmazione giorno per dipendente',globals.sbloccaProgrammazione);
+			sbloccaProg.methodArguments = [forms[frmName].foundset['idlavoratore'],giorno]; 
+		    sbloccaProg.enabled = true;
+		}
+		else
+		{
+			var bloccaProg = popUpMenu.addMenuItem('Imposta blocco programmazione giorno per dipendente',globals.bloccaProgrammazione);
+			bloccaProg.methodArguments = [forms[frmName].foundset['idlavoratore'],giorno]; 
+		    bloccaProg.enabled = true;
+		}
+	    popUpMenu.addSeparator();
+	}
     
 	var modificaSett = popUpMenu.addMenuItem('Modifica la settimana',globals.apriPopupProgrammazioneSettimana);
 	modificaSett.methodArguments = [event,numSettimana,giorno,forms[frmName].foundset.getSelectedIndex(),fromCopertura];
@@ -206,7 +226,7 @@ function onRightClickGiorno(event)
 	{
 		var stampaProgNegozioPeriodo = popUpMenu.addMenuItem('Stampa la programmazione del periodo',scopes.neg_reports.confermaEsportazioneProgrammazioneNegozioPeriodo);
 		stampaProgNegozioPeriodo.methodArguments = [event,forms.neg_header_dtl.idditta,forms.neg_header_options.vAnno,forms.neg_header_options.vMese];
-	}
+	}	
 	popUpMenu.show(event.getSource());
 		
 }
