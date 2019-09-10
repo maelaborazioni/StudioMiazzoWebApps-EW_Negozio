@@ -160,9 +160,10 @@ function preparaProgrammazioneGiornoNegozio(idDitta,arrLavoratori,giorno,settima
 		    continue;
 		}
 		
-		// verifica se lavoratore con regola a zero ore
+		// verifica se lavoratore con regola a zero ore oppure che non ammette distribuzione 
 		var recReg = globals.getRegolaLavoratoreGiorno(arrLavoratori[l-1],giorno);
-		if(recReg && recReg.totaleoreperiodo == 0)
+		if(recReg 
+				&& (recReg.totaleoreperiodo == 0 || recReg.ammettedistribuzione == 0))
 			dsGiornoNegozio.setValue(l,15,1);
 		
 		// recupero dei dati esistenti per la programmazione del giorno
@@ -470,9 +471,10 @@ function preparaProgrammazioneSettimanaNegozio(idDitta,arrLavoratori,settimana,s
 			if( dataAss > giorno || dataCess != null && dataCess < giorno)
 			   dsGiornoNegozio.setValue(l,stdColNumber + 14 * (g - 1) + 14,1);	
 			
-			// verifica se lavoratore con regola a zero ore
+			// verifica se lavoratore con regola a zero ore oppure che non ammette distribuzione
 			var recReg = globals.getRegolaLavoratoreGiorno(arrLavoratori[l-1],giorno);
-			if(recReg && recReg.totaleoreperiodo == 0)
+			if(recReg 
+					&& (recReg.totaleoreperiodo == 0 || recReg.ammettedistribuzione == 0))
 				dsGiornoNegozio.setValue(l,stdColNumber + 14 * (g - 1) + 12,1);
 			
 			// recupero dei dati esistenti per la programmazione del giorno
@@ -1073,7 +1075,15 @@ function disegnaProgrammazioneSettimanaNegozio(dSet,idDitta,settimana,numDip,sel
 				fldE1.enabled = fldU1.editable = fldE2.enabled = fldU2.enabled = false;
 				fldE1.toolTipText = fldU1.toolTipText = fldE2.toolTipText = fldU2.toolTipText = 'La programmazione del giorno per il dipendente risulta bloccata';
 			}
-				
+			
+			// verifica regola senza distribuzione
+			var regola = globals.getRegolaLavoratoreGiorno(dSet.getValue(l,1),currGiorno);
+			if(regola && regola.ammettedistribuzione == 0)
+			{
+				fldE1.enabled = fldU1.editable = fldE2.enabled = fldU2.enabled = false;
+				fldE1.toolTipText = fldU1.toolTipText = fldE2.toolTipText = fldU2.toolTipText = 'Il dipendente non ha una regola oraria che permette la programmazione';
+			}
+			
 			// ore totali giorno
 			var varOreGiorno = frmNeg.newVariable('ore_programmato_' + l + '_' + g,JSVariable.TEXT,"'" + dSet.getValue(l,8 + 14 * (g - 1)) + "'");
 			var fldOreGiorno = frmNeg.newTextField(varOreGiorno.name,dxCodice + dxNominativo + (5 * (g - 1) + 4) * dxTimbr,l * dyLbl,dxTimbr,dyFld);
@@ -2687,7 +2697,7 @@ function onRenderGiornoNegozio(event)
 		else if(rec['regola_zero_ore'] == 1 && !rec['tirocinante'])
 		{
 			ren.bgcolor = 'gray';
-			ren.toolTipText = 'Dipendente con regola a zero ore non modificabile';
+			ren.toolTipText = 'Dipendente con regola a zero ore o che non ammette distribuzione e/o programmazione';
 			ren.enabled = false;
 		}	
 		
@@ -2728,7 +2738,7 @@ function onRenderSettimanaNegozio(event)
 			else if(rec['regola_zero_ore_' + elemIndex] == 1)
 			{
 				ren.bgcolor = 'gray';
-				ren.toolTipText = 'Dipendente con regola a zero ore non modificabile';
+				ren.toolTipText = 'Dipendente con regola a zero ore o che non ammette distribuzione e/o programmazione';
 				ren.enabled = false;
 		    }
 		    else if(rec['tipo_riposo_' + elemIndex] && rec['ore_festivo_' + elemIndex])
@@ -2772,7 +2782,7 @@ function onRenderGiornoNegozioOreTeoriche(event)
 		else if(rec['regola_zero_ore'] == 1)
 		{
 			ren.bgcolor = '#c8c8c8';
-			ren.toolTipText = 'Dipendente con regola a zero ore non modificabile';
+			ren.toolTipText = 'Dipendente con regola a zero ore o che non ammette distribuzione e/o programmazione';
 			ren.enabled = false;
 		}
 
