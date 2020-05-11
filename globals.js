@@ -2383,7 +2383,7 @@ function preparaProgrammazioneSettimanalePeriodoNegozio(visualizzaPrec)
 	newForm.navigator = SM_DEFAULTS.NONE;
 		
 	var primoGiornoPeriodo = new Date(_anno, _mese - 1,1);
-	var primaSettimana = globals.getWeekNumber(primoGiornoPeriodo);
+	var primaSettimana = globals.getWeekNumber(primoGiornoPeriodo)['week'];
 	var primaSettimanaCalc = primaSettimana;
 	if(primaSettimana == 53 || primaSettimana == 52)
 		primaSettimanaCalc = 0;
@@ -2554,7 +2554,7 @@ function preparaProgrammazioneSettimanalePeriodoNegozioAccordion(settimana)
 	newForm.styleClass = 'leaf_style';
 	
 	var primoGiornoPeriodo = new Date(_anno, _mese - 1,1);
-	var primaSettimana = globals.getWeekNumber(primoGiornoPeriodo);
+	var primaSettimana = globals.getWeekNumber(primoGiornoPeriodo)['week'];
 	var primoGiornoSettimana = null;
 	var ultimoGiornoSettimana = null;
 	
@@ -3043,15 +3043,15 @@ function ottieniDataSetTimbrProgrammate(idLavoratore, settimana, anno)
  */
 function getGiornoRiposoSettimanale(idLavoratore,giorno,tipoRiposo)
 {
-	var settimana = globals.getWeekNumber(giorno);
-	var primoGgSettimana = globals.getDateOfISOWeek(settimana,giorno.getFullYear());
+	/**Object { int week, int year }*/
+	var dayStruct = globals.getWeekNumber(giorno);
+	var primoGgSettimana = globals.getDateOfISOWeek(dayStruct['week'],dayStruct['year']);
 	var ultimoGgSettimana = new Date(primoGgSettimana.getFullYear(),primoGgSettimana.getMonth(),primoGgSettimana.getDate() + 6);
 
 	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 	var fs = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,globals.Table.GIORNALIERA_PROGFASCE);
 	if(fs.find())
 	{
-		
 		fs.iddip = idLavoratore;
 		fs.giorno = utils.dateFormat(primoGgSettimana,globals.ISO_DATEFORMAT) + '...' + utils.dateFormat(ultimoGgSettimana,globals.ISO_DATEFORMAT) + '|yyyyMMdd';
 	
@@ -3128,40 +3128,6 @@ function verificaDatiNegozioFtp(idDitta,idGruppoInst)
 //	}
 //	
 //	return false;
-}
-
-/**
- * Ottiene il numero delle ore associate alla festività goduta del giorno per il dipendente
- * avente la fascia oraria associata
- * 
- * @param {Number} idLavoratore
- * @param {Date} giorno
- * @param {Number} idFasciaOraria
- * 
- * @properties={typeid:24,uuid:"C0EA0995-A210-48D8-A779-A7A8E7A369D1"}
- */
-function getOreFestivitaDipendente(idLavoratore,giorno,idFasciaOraria)
-{
-	var url = globals.WS_URL + '/Eventi/OreFestivitaGiorno';
-	var params = {
-		idditta : globals.getDitta(idLavoratore),
-		periodo : giorno.getFullYear() * 100 + giorno.getMonth() + 1,
-		giorniselezionati: [giorno.getDate()],
-		iddipendenti: [idLavoratore],
-		idevento: 633,
-		ore: 0,
-		codproprieta: '',
-		tipoconnessione : globals.TipoConnessione.CLIENTE,
-		idfasciaoraria : idFasciaOraria
-	};
-
-	var _response = globals.getWebServiceResponse(url, params);
-	if (_response) 
-		return _response['ore'];
-	else {
-		globals.ma_utl_showErrorDialog('Recupero delle ore di festività non riuscito', 'Errore del server');
-		return null;
-	}
 }
 
 /**
@@ -3269,7 +3235,7 @@ function preparaParametriProgrammazioneNegozio(_idditta,_anno,_mese,_programName
 		case 'NEG_CR':
 		case 'NEG_CR_2':	
 			arrDipGerarchia = ma_sec_getUsers(globals.svy_sec_lgn_organization_id,true); 
-			url = globals.WS_URL + "/Trattamenti/RiepilogoFestivitaDittaPeriodo";
+			url = globals.WS_CALENDAR + "/Holiday32/RiepilogoFestivitaDittaPeriodo";
 			for(var l = 0; l < arrDipGerarchia.length; l++)
 			{
 				var idDittaLavoratore = globals.getDitta(arrDipGerarchia[l]);
@@ -3283,7 +3249,7 @@ function preparaParametriProgrammazioneNegozio(_idditta,_anno,_mese,_programName
 		    	parFestivitaMP.iddipendenti = [];
 		    if(parFestivitaMS != null)
 		    	parFestivitaMS.iddipendenti = [];
-			url = globals.WS_URL + "/Trattamenti/RiepilogoFestivitaDittaPeriodo";
+			url = globals.WS_CALENDAR + "/Holiday32/RiepilogoFestivitaDittaPeriodo";
 			arrDitte.push(_idditta);
 			break;
 		default:
@@ -3324,27 +3290,26 @@ function preparaParametriProgrammazioneNegozio(_idditta,_anno,_mese,_programName
 		    }
 		}
 		
-		/** @type {{ returnValue: Boolean, riepilogoFestivita: Array<Array> }} */
 		var response = globals.getWebServiceResponse(url, parFestivita);
-		/** @type {{ returnValue: Boolean, riepilogoFestivita: Array<Array> }} */
 		var responseMP = parFestivitaMP != null ? globals.getWebServiceResponse(url, parFestivitaMP) : null;
-		/** @type {{ returnValue: Boolean, riepilogoFestivita: Array<Array> }} */
 		var responseMS = parFestivitaMS != null ? globals.getWebServiceResponse(url, parFestivitaMS) : null;
 		
-		if (response && response.returnValue === true
-			&& (responseMP == null || responseMP && responseMP.returnValue == true)
-			&& (responseMS == null || responseMS && responseMS.returnValue == true)
+		if (response && response.StatusCode === HTTPStatusCode.OK
+			&& (responseMP == null || responseMP && responseMP.StatusCode == HTTPStatusCode.OK)
+			&& (responseMS == null || responseMS && responseMS.StatusCode == HTTPStatusCode.OK)
 			)
 		{
 	       // gestione delle informazioni ottenute : salvataggio della struttura di riepilogo e popolamento degli array delle festività
-	       var arrRiepFestivita = response.riepilogoFestivita;
+	       /** @type{Array} */
+			var arrRiepFestivita = response.ReturnValue;
 	       for(var f = 0; f < arrRiepFestivita.length; f++)
 	       {   
 	    	   if(arrRiepFestivita[f])
 	           {
 	        	   //  visualizziamo solamente le festività godute che concorrono all'orario di riferimento
 	        	   var festivitaGod = false;
-	    	       var vArrFesta = arrRiepFestivita[f][2];
+	    	       /** @type {Array<Object>}*/
+	        	   var vArrFesta = arrRiepFestivita[f][2];
 	    		   for(var j = 0; j < vArrFesta.length; j++)
 	    		   {
 	        		   if(utils.stringLeft(vArrFesta[j][2],2) == "FG")
@@ -3358,15 +3323,17 @@ function preparaParametriProgrammazioneNegozio(_idditta,_anno,_mese,_programName
 	              
 	       if(responseMP != null)
 	       {
-	    	   var arrRiepFestivitaMP = responseMP.riepilogoFestivita;
+	    	   /** @type {Array<Object>} */
+	    	   var arrRiepFestivitaMP = responseMP.ReturnValue;
 	           for(f = 0; f < arrRiepFestivitaMP.length; f++)
 	           {   
 	        	   if(arrRiepFestivitaMP[f])
 	               {
 	            	   //  visualizziamo solamente le festività godute che concorrono all'orario di riferimento
 	            	   var festivitaGodMP = false;
-	        	       var vArrFestaMP = arrRiepFestivitaMP[f][2];
-	        		   for(j = 0; j < vArrFestaMP.length; j++)
+	        	       /** @type {Array<Object>} */
+	            	   var vArrFestaMP = arrRiepFestivitaMP[f][2];
+	        	       for(j = 0; j < vArrFestaMP.length; j++)
 	        		   {
 	            		   if(utils.stringLeft(vArrFestaMP[j][2],2) == "FG")
 	            			   festivitaGodMP = true;
@@ -3384,15 +3351,17 @@ function preparaParametriProgrammazioneNegozio(_idditta,_anno,_mese,_programName
 	       
 	       if(responseMS != null)
 	       {
-	    	   var arrRiepFestivitaMS = responseMS.riepilogoFestivita;
+	    	   /** @type {Array<Object>} */
+	    	   var arrRiepFestivitaMS = responseMS.ReturnValue;
 	           for(f = 0; f < arrRiepFestivitaMS.length; f++)
 	           {   
 	        	   if(arrRiepFestivitaMS[f])
 	               {
 	            	   //  visualizziamo solamente le festività godute che concorrono all'orario di riferimento
 	            	   var festivitaGodMS = false;
-	        	       var vArrFestaMS = arrRiepFestivitaMS[f][2];
-	        		   for(j = 0; j < vArrFestaMS.length; j++)
+	        	       /** @type {Array<Object>} */
+	            	   var vArrFestaMS = arrRiepFestivitaMS[f][2];
+	        	       for(j = 0; j < vArrFestaMS.length; j++)
 	        		   {
 	            		   if(utils.stringLeft(vArrFestaMS[j][2],2) == "FG")
 	            			   festivitaGodMS = true;
@@ -3416,191 +3385,6 @@ function preparaParametriProgrammazioneNegozio(_idditta,_anno,_mese,_programName
 			return;
 		}
 	}
-	
-//	// gestione dei parametri mensili delle festività e della rete di impresa
-//	var frm = forms.neg_header_options;
-//    frm.vAnno = _anno;
-//    frm.vMese = _mese;
-//    frm.vArrGiorniFestivi = [];
-//       
-//    var periodo = _anno * 100 + _mese;
-//    
-//    // parametri per il recupero dei giorni festivi nel mese selezionato
-//    var parFestivita = null;
-//    // parametri per il recupero dei giorni festivi nel mese precedente al selezionato (quando è gennaio)
-//    var parFestivitaMP = null;
-//    // parametri per il recupero dei giorni festivi nel mese successivo al selezionato (quando è dicembre)
-//    var parFestivitaMS = null;
-//    // url dell'operazione relativa per il calcolo delle festività    
-//    var url;
-//   	
-//	// apertura del program e conseguente visualizzazione
-//	var filterProgNegozio = [];
-//	if(_programName == 'NEG')
-//		filterProgNegozio = { filter_name: 'ftr_idditta', 
-//			                  filter_field_name: 'idditta',
-//							  filter_operator: '=',
-//							  filter_value: _idditta };
-//	
-//	var progObj = globals.nav.program[_programName];
-//	progObj.foundset = null;
-//	progObj.filter = [filterProgNegozio];
-//	
-//	var arrDipGerarchia = [];
-//	
-//	parFestivita = {
-//    	tipoconnessione : globals.TipoConnessione.CLIENTE,
-//		databasecliente : globals.customer_dbserver_name,
-//		periodo : periodo,
-//		idditta : _idditta,
-//		gruppolavoratori : ''
-//    }
-//	
-//	if(_mese == 1)
-//	{
-//		parFestivitaMP = {
-//	    	tipoconnessione : globals.TipoConnessione.CLIENTE,
-//			databasecliente : globals.customer_dbserver_name,
-//			periodo : (_anno - 1) * 100 + 12,
-//			idditta : _idditta,
-//			gruppolavoratori : ''
-//	    }
-//	}
-//	else if(_mese == 12)
-//	{
-//		parFestivitaMS = {
-//	    	tipoconnessione : globals.TipoConnessione.CLIENTE,
-//			databasecliente : globals.customer_dbserver_name,
-//			periodo : (_anno + 1) * 100 + 1,
-//			idditta : _idditta,
-//			gruppolavoratori : ''
-//	    }
-//	}
-//	
-//	switch(_programName)
-//	{
-//		case 'NEG_Programmazione':
-//		case 'NEG_CR':
-//		case 'NEG_CR_2':	
-//			arrDipGerarchia = ma_sec_getUsers(globals.svy_sec_lgn_organization_id,true); 
-//			parFestivita.iddipendenti = [-1].concat(arrDipGerarchia);
-//		    if(parFestivitaMP != null)
-//		    	parFestivitaMP.iddipendenti = [-1].concat(arrDipGerarchia);
-//		    if(parFestivitaMS != null)
-//		    	parFestivitaMS.iddipendenti = [-1].concat(arrDipGerarchia);
-//			url = globals.WS_URL + "/Trattamenti/RiepilogoFestivitaDittaPeriodoLavoratori";
-//			break;
-//		case 'NEG':
-//			parFestivita.iddipendenti = []; 
-//			if(parFestivitaMP != null)
-//		    	parFestivitaMP.iddipendenti = [];
-//		    if(parFestivitaMS != null)
-//		    	parFestivitaMS.iddipendenti = [];
-//			url = globals.WS_URL + "/Trattamenti/RiepilogoFestivitaDittaPeriodo";
-//			break;
-//		case 'NEG_Rete':
-//			parFestivita.iddipendenti = [];
-//			if(parFestivitaMP != null)
-//		    	parFestivitaMP.iddipendenti = [];
-//		    if(parFestivitaMS != null)
-//		    	parFestivitaMS.iddipendenti = [];
-//		    url = globals.WS_URL + "/Trattamenti/RiepilogoFestivitaDittaPeriodo";
-//			break;
-//		default:
-//			break;
-//	}
-		
-//	/** @type {{ returnValue: Boolean, riepilogoFestivita: Array<Array> }} */
-//	var response = globals.getWebServiceResponse(url, parFestivita);
-//	/** @type {{ returnValue: Boolean, riepilogoFestivita: Array<Array> }} */
-//	var responseMP = parFestivitaMP != null ? globals.getWebServiceResponse(url, parFestivitaMP) : null;
-//	/** @type {{ returnValue: Boolean, riepilogoFestivita: Array<Array> }} */
-//	var responseMS = parFestivitaMS != null ? globals.getWebServiceResponse(url, parFestivitaMS) : null;
-//	
-//	if (response && response.returnValue === true
-//		&& (responseMP == null || responseMP && responseMP.returnValue == true)
-//		&& (responseMS == null || responseMS && responseMS.returnValue == true)
-//		)
-//	{
-//       // gestione delle informazioni ottenute : salvataggio della struttura di riepilogo e popolamento degli array delle festività
-//       frm.vArrRiepilogoFestivita = [];
-//       frm.vArrGiorniFestivi = [];
-//       
-//       var arrRiepFestivita = response.riepilogoFestivita;
-//       for(var f = 0; f < arrRiepFestivita.length; f++)
-//       {   
-//    	   if(arrRiepFestivita[f])
-//           {
-//        	   //  visualizziamo solamente le festività godute che concorrono all'orario di riferimento
-//        	   var festivitaGod = false;
-//    	       var vArrFesta = arrRiepFestivita[f][2];
-//    		   for(var j = 0; j < vArrFesta.length; j++)
-//    		   {
-//        		   if(utils.stringLeft(vArrFesta[j][2],2) == "FG")
-//        			   festivitaGod = true;
-//        	   } 
-//        	           	   
-//        	   if(festivitaGod)
-//       	          frm.vArrGiorniFestivi.push(arrRiepFestivita[f][0]);
-//       	   }
-//       }
-//              
-//       if(responseMP != null)
-//       {
-//    	   var arrRiepFestivitaMP = responseMP.riepilogoFestivita;
-//           for(f = 0; f < arrRiepFestivitaMP.length; f++)
-//           {   
-//        	   if(arrRiepFestivitaMP[f])
-//               {
-//            	   //  visualizziamo solamente le festività godute che concorrono all'orario di riferimento
-//            	   var festivitaGodMP = false;
-//        	       var vArrFestaMP = arrRiepFestivitaMP[f][2];
-//        		   for(j = 0; j < vArrFestaMP.length; j++)
-//        		   {
-//            		   if(utils.stringLeft(vArrFestaMP[j][2],2) == "FG")
-//            			   festivitaGodMP = true;
-//            	   } 
-//            	           	   
-//            	   if(festivitaGodMP)
-//           	          frm.vArrGiorniFestivi.push(arrRiepFestivitaMP[f][0]);
-//           	   
-//            	   arrRiepFestivita.push(arrRiepFestivitaMP[f]);
-//               }
-//        	             	   
-//           }    	   
-//       }
-//       
-//       if(responseMS != null)
-//       {
-//    	   var arrRiepFestivitaMS = responseMS.riepilogoFestivita;
-//           for(f = 0; f < arrRiepFestivitaMS.length; f++)
-//           {   
-//        	   if(arrRiepFestivitaMS[f])
-//               {
-//            	   //  visualizziamo solamente le festività godute che concorrono all'orario di riferimento
-//            	   var festivitaGodMS = false;
-//        	       var vArrFestaMS = arrRiepFestivitaMS[f][2];
-//        		   for(j = 0; j < vArrFestaMS.length; j++)
-//        		   {
-//            		   if(utils.stringLeft(vArrFestaMS[j][2],2) == "FG")
-//            			   festivitaGodMS = true;
-//            	   } 
-//            	           	   
-//            	   if(festivitaGodMS)
-//           	          frm.vArrGiorniFestivi.push(arrRiepFestivitaMS[f][0]);
-//            	   
-//            	   arrRiepFestivita.push(arrRiepFestivitaMS[f]);
-//           	   }
-//           }
-//       }
-//       
-//       frm.vArrRiepilogoFestivita = arrRiepFestivita;
-//	}
-//	else
-//	{
-//		globals.ma_utl_showErrorDialog('Errore durante il recupero delle festività, contattare il servizio di assistenza.','Riepilogo festività del periodo');
-//		return;
-//	}
 }
 
 /**
@@ -3637,13 +3421,13 @@ function apriProgrammazioneCoperturaNegozio(_event,_idditta,_anno,_mese,_grLav,_
     }
 
     // gestione festività del mese selezionato
-    var url = globals.WS_URL + "/Trattamenti/RiepilogoFestivitaDittaPeriodo";
-	/** @type {{ returnValue: Boolean, riepilogoFestivita: Array<Array> }} */
+    var url = globals.WS_CALENDAR + "/Holiday32/RiepilogoFestivitaDittaPeriodo";
 	var response = globals.getWebServiceResponse(url, parFestivita);
-	if (response && response.returnValue === true)
+	if (response && response.StatusCode === HTTPStatusCode.OK)
 	{
        // gestione delle informazioni ottenute : salvataggio della struttura di riepilogo e popolamento degli array delle festività
-       frm.vArrRiepilogoFestivita = response.riepilogoFestivita;
+       /** type {Array<Object>} */
+       frm.vArrRiepilogoFestivita = response.ReturnValue;
        frm.vArrGiorniFestivi = [];
        for(var f = 0; f < frm.vArrRiepilogoFestivita.length; f++)
        	   frm.vArrGiorniFestivi.push(frm.vArrRiepilogoFestivita[f][0]);
@@ -4673,7 +4457,7 @@ function onRightClickIntervallo(event)
 	var mese = parseInt(utils.stringMiddle(isoDateString,5,2),10);
 	var gg = parseInt(utils.stringRight(isoDateString,2),10);
 	var giorno = new Date(anno,mese - 1,gg);
-	var numSettimana = globals.getWeekNumber(giorno); 
+	var numSettimana = globals.getWeekNumber(giorno)['week']; 
 	var index =  parseInt(utils.stringMiddle(elemName,utils.stringPosition(elemName,'_',0,2) + 1,utils.stringPosition(elemName,'_',0,3) - (utils.stringPosition(elemName,'_',0,2) + 1)),10);
 	var primoGgSettimana = globals.getDateOfISOWeek(numSettimana,forms.neg_header_options.vAnno);
     var ultimoGgSettimana = new Date(primoGgSettimana.getFullYear(),primoGgSettimana.getMonth(), primoGgSettimana.getDate() + 6);
@@ -5814,9 +5598,8 @@ function gestisciModificaCoperturaOrario(currRec,orarioApertura,numIntervalli,gi
 	var sqlProgfasce = "DELETE FROM E2GiornalieraProgFasce WHERE idDip = ? AND Giorno = ?";
 	                   
 	var success = plugins.rawSQL.executeSQL(globals.Server.MA_PRESENZE,
-		                                   globals.Table.GIORNALIERA_PROGFASCE,
-										   sqlProgfasce,
-										   [idLavoratore,utils.dateFormat(giorno,globals.ISO_DATEFORMAT)]);
+		                                    sqlProgfasce,
+										    [idLavoratore,utils.dateFormat(giorno,globals.ISO_DATEFORMAT)]);
 	if(!success)
 	{
 		globals.ma_utl_showWarningDialog('Errore durante la cancellazione delle fasce esistenti','Inserimento orario copertura punto vendita');
@@ -6004,7 +5787,9 @@ function eliminaProgrammazioneGiornoNegozio(_itemInd,_parItem,_isSel,_parMenTxt,
 	
 	globals.eliminaFasceProgrammate(arrLav,giorno,giorno);
 	
-    var settimana = globals.getWeekNumber(giorno);
+	/**Object { int week, int year }*/
+	var dayStruct = globals.getWeekNumber(giorno);
+	var settimana = dayStruct['week'];
 	
 	if(fromCopertura)
 	{

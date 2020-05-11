@@ -170,8 +170,7 @@ function process_prog_settimana(event)
 				                   " AND Giorno = ?";
 				                   
 				var success = plugins.rawSQL.executeSQL(globals.Server.MA_PRESENZE,
-					                                   globals.Table.GIORNALIERA_PROGFASCE,
-													   sqlProgfasce,
+					                                   sqlProgfasce,
 													   [utils.dateFormat(vGiorno,globals.ISO_DATEFORMAT)]);
 				if(!success)
 				{

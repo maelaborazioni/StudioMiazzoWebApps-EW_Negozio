@@ -61,7 +61,8 @@ size:"30,30",
 styleClass:"btn_cancel_40",
 transparent:true,
 typeid:7,
-uuid:"47A0B721-69A0-4AB5-8D75-0C9E1EF37226"
+uuid:"47A0B721-69A0-4AB5-8D75-0C9E1EF37226",
+visible:false
 },
 {
 extendsID:"AAAC08F8-0270-4E48-995F-E7066E036521",

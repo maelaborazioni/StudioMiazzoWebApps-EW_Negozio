@@ -146,6 +146,7 @@ function setOreFestivitaGodutaGiorno(dataFesta,idLavoratore,ore)
 	{
 		if(vArrRiepilogoFestivita[i][0] == dataFesta)
 		{
+			/** @type {Array} */
 			var vArrFesta = vArrRiepilogoFestivita[i][2];
 			for(var j = 0; j < vArrFesta.length; j++)
 			{

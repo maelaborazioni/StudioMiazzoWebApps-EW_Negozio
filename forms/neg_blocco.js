@@ -83,8 +83,7 @@ function onActionBtnAddBlocks(event)
 												  allowInBrowse : true
 												  });
 	var fsLavBloccati = globals.getProgFasceBlocco(globals.getLavoratoriDittaDalAl(vArrDitte),
-		                                           vDataBlocco,
-												   vDataBlocco);
+		                                           vDataBlocco);
 	
 	var arrLavBloccati = globals.foundsetToArray(fsLavBloccati,'idlavoratore');
 	application.output('Lavoratori bloccati : ' + arrLavBloccati);
