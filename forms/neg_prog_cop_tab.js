@@ -150,7 +150,7 @@ function process_prepara_copertura(bool)
 		
 		// determina la prima settimana per il periodo scelto (serve per compilare la valuelist delle settimane selezionabili)
 		var primoGiornoPeriodo = new Date(_anno, _mese - 1,1);
-		var primaSettimana = globals.getWeekNumber(primoGiornoPeriodo);
+		var primaSettimana = globals.getWeekNumber(primoGiornoPeriodo)['week'];
 		var primaSettimanaCalc = primaSettimana;
 		if(primaSettimana == 53 || primaSettimana == 52)
 			primaSettimanaCalc = 0;
@@ -272,7 +272,7 @@ function process_datachange_sett(event,settimana,giorno,isChanged)
  */
 function onDataChangeGiornoCop(oldValue, newValue, event) 
 {
-	if(globals.getWeekNumber(oldValue) != globals.getWeekNumber(newValue))
+	if(globals.getWeekNumber(oldValue)['week'] != globals.getWeekNumber(newValue)['week'])
 	{
 		switch(globals.getWeekNumber(vGiorno))
 		{

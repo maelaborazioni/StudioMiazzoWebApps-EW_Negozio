@@ -233,7 +233,9 @@ function onActionPreviousDay(event)
 	// controllo passaggio di mese 
 	var primoGgProg = new Date(vGiorno.getFullYear(),vGiorno.getMonth(),1);
 	var prevGiorno = new Date(vGiorno.getFullYear(),vGiorno.getMonth(),vGiorno.getDate() - 1);
-	var prevGiornoSettimana = globals.getWeekNumber(prevGiorno);
+	/**Object { int week, int year }*/
+	var dayStruct = globals.getWeekNumber(prevGiorno);
+	var prevGiornoSettimana = dayStruct['week'];
 	if(prevGiorno < primoGgProg)
 	{
 		globals.ma_utl_showWarningDialog('Raggiunto il primo giorno del mese','Programmazione del giorno');
@@ -260,14 +262,7 @@ function onActionNextDay(event)
 {
 	// controllo passaggio di mese 
 	var nextGiorno = new Date(vGiorno.getFullYear(),vGiorno.getMonth(),vGiorno.getDate() + 1);
-//	var week = globals.getWeekNumber(vGiorno);
-//	var primoGgSett = globals.getDateOfISOWeek(week,vGiorno.getFullYear());
-//	var ultimoGgProg = new Date(primoGgSett.getFullYear(), primoGgSett.getMonth(), primoGgSett.getDate() + 6);
-//	if(nextGiorno > ultimoGgProg)
-//	{
-//		globals.ma_utl_showWarningDialog('Raggiunto l\'ultimo giorno programmabile per il mese','Programmazione del giorno');
-//		return;
-//	}
+
 	// recupero dei lavoratori effettivi...
 	/** @type {Array<Number>}*/
 	var arrLavoratori = globals.foundsetToArray(forms['neg_prog_giorno_tbl_temp'].foundset,'idlavoratore');

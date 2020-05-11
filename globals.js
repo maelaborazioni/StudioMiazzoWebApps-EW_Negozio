@@ -2383,7 +2383,7 @@ function preparaProgrammazioneSettimanalePeriodoNegozio(visualizzaPrec)
 	newForm.navigator = SM_DEFAULTS.NONE;
 		
 	var primoGiornoPeriodo = new Date(_anno, _mese - 1,1);
-	var primaSettimana = globals.getWeekNumber(primoGiornoPeriodo);
+	var primaSettimana = globals.getWeekNumber(primoGiornoPeriodo)['week'];
 	var primaSettimanaCalc = primaSettimana;
 	if(primaSettimana == 53 || primaSettimana == 52)
 		primaSettimanaCalc = 0;
@@ -2554,7 +2554,7 @@ function preparaProgrammazioneSettimanalePeriodoNegozioAccordion(settimana)
 	newForm.styleClass = 'leaf_style';
 	
 	var primoGiornoPeriodo = new Date(_anno, _mese - 1,1);
-	var primaSettimana = globals.getWeekNumber(primoGiornoPeriodo);
+	var primaSettimana = globals.getWeekNumber(primoGiornoPeriodo)['week'];
 	var primoGiornoSettimana = null;
 	var ultimoGiornoSettimana = null;
 	
@@ -3043,15 +3043,15 @@ function ottieniDataSetTimbrProgrammate(idLavoratore, settimana, anno)
  */
 function getGiornoRiposoSettimanale(idLavoratore,giorno,tipoRiposo)
 {
-	var settimana = globals.getWeekNumber(giorno);
-	var primoGgSettimana = globals.getDateOfISOWeek(settimana,giorno.getFullYear());
+	/**Object { int week, int year }*/
+	var dayStruct = globals.getWeekNumber(giorno);
+	var primoGgSettimana = globals.getDateOfISOWeek(dayStruct['week'],dayStruct['year']);
 	var ultimoGgSettimana = new Date(primoGgSettimana.getFullYear(),primoGgSettimana.getMonth(),primoGgSettimana.getDate() + 6);
 
 	/** @type {JSFoundSet<db:/ma_presenze/e2giornalieraprogfasce>} */
 	var fs = databaseManager.getFoundSet(globals.Server.MA_PRESENZE,globals.Table.GIORNALIERA_PROGFASCE);
 	if(fs.find())
 	{
-		
 		fs.iddip = idLavoratore;
 		fs.giorno = utils.dateFormat(primoGgSettimana,globals.ISO_DATEFORMAT) + '...' + utils.dateFormat(ultimoGgSettimana,globals.ISO_DATEFORMAT) + '|yyyyMMdd';
 	
@@ -3128,40 +3128,6 @@ function verificaDatiNegozioFtp(idDitta,idGruppoInst)
 //	}
 //	
 //	return false;
-}
-
-/**
- * Ottiene il numero delle ore associate alla festività goduta del giorno per il dipendente
- * avente la fascia oraria associata
- * 
- * @param {Number} idLavoratore
- * @param {Date} giorno
- * @param {Number} idFasciaOraria
- * 
- * @properties={typeid:24,uuid:"C0EA0995-A210-48D8-A779-A7A8E7A369D1"}
- */
-function getOreFestivitaDipendente(idLavoratore,giorno,idFasciaOraria)
-{
-	var url = globals.WS_URL + '/Eventi/OreFestivitaGiorno';
-	var params = {
-		idditta : globals.getDitta(idLavoratore),
-		periodo : giorno.getFullYear() * 100 + giorno.getMonth() + 1,
-		giorniselezionati: [giorno.getDate()],
-		iddipendenti: [idLavoratore],
-		idevento: 633,
-		ore: 0,
-		codproprieta: '',
-		tipoconnessione : globals.TipoConnessione.CLIENTE,
-		idfasciaoraria : idFasciaOraria
-	};
-
-	var _response = globals.getWebServiceResponse(url, params);
-	if (_response) 
-		return _response['ore'];
-	else {
-		globals.ma_utl_showErrorDialog('Recupero delle ore di festività non riuscito', 'Errore del server');
-		return null;
-	}
 }
 
 /**
@@ -4673,7 +4639,7 @@ function onRightClickIntervallo(event)
 	var mese = parseInt(utils.stringMiddle(isoDateString,5,2),10);
 	var gg = parseInt(utils.stringRight(isoDateString,2),10);
 	var giorno = new Date(anno,mese - 1,gg);
-	var numSettimana = globals.getWeekNumber(giorno); 
+	var numSettimana = globals.getWeekNumber(giorno)['week']; 
 	var index =  parseInt(utils.stringMiddle(elemName,utils.stringPosition(elemName,'_',0,2) + 1,utils.stringPosition(elemName,'_',0,3) - (utils.stringPosition(elemName,'_',0,2) + 1)),10);
 	var primoGgSettimana = globals.getDateOfISOWeek(numSettimana,forms.neg_header_options.vAnno);
     var ultimoGgSettimana = new Date(primoGgSettimana.getFullYear(),primoGgSettimana.getMonth(), primoGgSettimana.getDate() + 6);
@@ -6004,7 +5970,9 @@ function eliminaProgrammazioneGiornoNegozio(_itemInd,_parItem,_isSel,_parMenTxt,
 	
 	globals.eliminaFasceProgrammate(arrLav,giorno,giorno);
 	
-    var settimana = globals.getWeekNumber(giorno);
+	/**Object { int week, int year }*/
+	var dayStruct = globals.getWeekNumber(giorno);
+	var settimana = dayStruct['week'];
 	
 	if(fromCopertura)
 	{

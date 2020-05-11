@@ -244,7 +244,9 @@ function exportReportProgrammazionePeriodo(giornoDal,giornoAl,tipoGestoreReteImp
     fs.loadAllRecords();
     
     var reportParams = new Object();
-	reportParams.psettimana = globals.getWeekNumber(giornoDal);
+    /**Object { int week, int year }*/
+	var dayStruct = globals.getWeekNumber(giornoDal);
+	reportParams.psettimana = dayStruct['week'];
 	reportParams.pgiornodal = giornoDal;
 	reportParams.pgiornoal = giornoAl;
 	reportParams.pnegozio = globals.getRagioneSociale(idDittaNegozio);
