@@ -3235,7 +3235,7 @@ function preparaParametriProgrammazioneNegozio(_idditta,_anno,_mese,_programName
 		case 'NEG_CR':
 		case 'NEG_CR_2':	
 			arrDipGerarchia = ma_sec_getUsers(globals.svy_sec_lgn_organization_id,true); 
-			url = globals.WS_CALENDAR + "/Holiday32/RiepilogoFestivitaDittaPeriodo";
+			url = globals.WS_CALENDAR + "/Holiday32/FactoryHolidays";
 			for(var l = 0; l < arrDipGerarchia.length; l++)
 			{
 				var idDittaLavoratore = globals.getDitta(arrDipGerarchia[l]);
@@ -3249,7 +3249,7 @@ function preparaParametriProgrammazioneNegozio(_idditta,_anno,_mese,_programName
 		    	parFestivitaMP.iddipendenti = [];
 		    if(parFestivitaMS != null)
 		    	parFestivitaMS.iddipendenti = [];
-			url = globals.WS_CALENDAR + "/Holiday32/RiepilogoFestivitaDittaPeriodo";
+			url = globals.WS_CALENDAR + "/Holiday32/FactoryHolidays";
 			arrDitte.push(_idditta);
 			break;
 		default:
@@ -3421,7 +3421,7 @@ function apriProgrammazioneCoperturaNegozio(_event,_idditta,_anno,_mese,_grLav,_
     }
 
     // gestione festività del mese selezionato
-    var url = globals.WS_CALENDAR + "/Holiday32/RiepilogoFestivitaDittaPeriodo";
+    var url = globals.WS_CALENDAR + "/Holiday32/FactoryHolidays";
 	var response = globals.getWebServiceResponse(url, parFestivita);
 	if (response && response.StatusCode === HTTPStatusCode.OK)
 	{
